@@ -1,7 +1,7 @@
 ---
 title: 'Practica 2: Limpieza y análisis de datos'
 author: 'Juan Rodríguez Vega, Alejandro Gallardo Alberola'
-date: "Enero 2022"
+date: "Enero 2021"
 output:
   html_document:
     highlight: default
@@ -28,4 +28,5 @@ knitr::opts_chunk$set(eval=T, echo=T)
 ## Lectura de datos
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Escribe tu código aquí.
 ```
