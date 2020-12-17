@@ -23,10 +23,123 @@ knitr::opts_chunk$set(eval=T, echo=T)
 ```
 
 
-# Intro
+******
+# Enunciado
+******
 
-## Lectura de datos
+El objetivo de esta actividad será el tratamiento de un dataset, que puede ser el creado en la práctica 1 o bien cualquier dataset libre disponible en Kaggle (<https://www.kaggle.com>).
+
+Algunos ejemplos de dataset con los que podéis trabajar son:
+
+- Red Wine Quality (<https://www.kaggle.com/uciml/red-wine-quality-cortez-et-al-2009>)
+
+- Titanic: Machine Learning from Disaster (<https://www.kaggle.com/c/titanic>)
+
+El último ejemplo corresponde a una competición activa de Kaggle de manera que, opcionalmente, podéis aprovechar el trabajo realizado durante la práctica para entrar en esta competición.
+
+Siguiendo las principales etapas de un proyecto analítico, las diferentes tareas a realizar (y justificar) son las siguientes:
+
+1. Descripción del dataset. ¿Por qué es importante y qué pregunta/problema pretende responder?
+
+2. Integración y selección de los datos de interés a analizar.
+
+3. Limpieza de los datos.
+
+  3.1. ¿Los datos contienen ceros o elementos vacíos? ¿Cómo gestionarías cada uno de estos casos?
+  
+  3.2. Identificación y tratamiento de valores extremos.
+  
+4. Análisis de los datos.
+
+  4.1. Selección de los grupos de datos que se quieren analizar/comparar (planificación de los análisis a aplicar).
+  
+  4.2. Comprobación de la normalidad y homogeneidad de la varianza.
+  
+  4.3. Aplicación de pruebas estadísticas para comparar los grupos de datos. En función de los datos y el objetivo del estudio, aplicar pruebas de contraste de hipótesis,correlaciones, regresiones, etc. Aplicar al menos tres métodos de análisis
+diferentes.
+
+5. Representación de los resultados a partir de tablas y gráficas.
+
+6. Resolución del problema. A partir de los resultados obtenidos, ¿cuáles son las conclusiones? ¿Los resultados permiten responder al problema?
+
+
+******
+# Solución
+******
+
+## Descripción del dataset
+
+El RMS Titanic fue un transatlántico británico, el mayor barco de pasajeros del mundo al finalizar su construcción, que se hundió durante la noche del 14 y la madrugada del 15 de abril de 1912 durante su viaje inaugural desde Southampton a Nueva York. En el hundimiento del Titanic murieron 1496 personas de las 2208 que iban a bordo, lo que convierte a esta catástrofe en uno de los mayores naufragios de la historia ocurridos en tiempo de paz. Construido entre 1909 y 1912 en los astilleros de Harland & Wolff en Belfast, el Titanic era el segundo de los tres buques que formaban la clase Olympic, propiedad de la naviera White Star Line, junto al RMS Olympic y, posteriormente, el HMHS Britannic (Wikipedia).
+
+El conjunto de datos está dividido en dos conjuntos de datos:
+
+- ***train.csv***: conjunto de pasajeros para elaborar los modelos de aprendizaje. Ya están clasificados (o sobrevivieron o murieron).
+
+- ***test.csv***: conjunto de pasajeros no clasificados para aplicar la predicción de los modelos.
+
+Es importante señalar que el dataset no contiene los datos de todos los pasajeros del barco. El dataset de entrenamiento únicamente contiene 891 registros con 12 variables:
+
+- ***PassengerID***: ID unívoco del pasajero
+
+- ***Survived***: el pasajero sobrevive o no (0 = No, 1 = Yes)
+
+- ***Pclass***: Clase del billete (1 = 1st, 2 = 2nd, 3 = 3rd)
+
+- ***Name***: Nombre del pasajero
+
+- ***Sex***: Género del pasajero ("male" o "female")
+
+- ***Age***: Edad del pasajero
+
+- ***AibSp***: nº de hermanos/cónyuges del pasajero abordo del barco
+
+- ***Parch***: nº de padres/hijos del pasajero abordo del barco
+
+- ***Ticket***: nº de billete del pasajero
+
+- ***Fare***: Tarifa del pasajero
+
+- ***Ticket***: nº de billete del pasajero
+
+- ***Cabin***: nº de cabina del pasajero
+
+- ***Embarked***: Puerto de embarque del pasajero (C = Cherbourg, Q = Queenstown, S = Southampton)
+
+A partir de este conjunto de datos se pretende dar respuesta a muchas de las cuestiones que siempre han rodeado a la supervencia de los pasajeros del Titanic. De esta forma, se puede ver qué condiciones (variables) influyeron principalmente a la hora de que una persona sobreviese o no. Por ejemplo:
+
+- ¿Se priorizó a los pasajeros de primera clase sobre el resto?
+
+- ¿Fueron las mujeres y los niños los primeros que embarcaron en los botes salvavidas?
+
+- ¿Qué tipos de pasajero tuvieron más probabilidades de sobrevivir?
+
+- ¿Qué tipo de pasajero procedía de cada punto de embarque?
+
+- Etc.
+
+## Integración y selección de los datos
+
+En este apartado se procede a cargar el dataset *train* puesto que es sobre el que se construyen los modelos. Puesto que la inferencia de modelos y su prueba no son el objetivo de esta asignatura, se decide prescindir de realizar lo mismo con el conjunto de *test*.
+
+A continuación, se muestran algunos registros e información general de los datos que servirá para posteriormente proceder a la limpieza a adaptación de los datos.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
-# Escribe tu código aquí.
+
+# Carga de librerías
+
+# Carga de los datasets
+df <- read.csv("train.csv", header=T, sep=",")
+
+# Visualización de algunos registros del dataset
+head(df,10)
+tail(df,10)
+
+# Datos estadísticos básicos
+summary(df)
+
+# Estructura y tipo de los datos
+str(df)
 ```
+
+## Limpieza de los datos
+
