@@ -13,7 +13,7 @@ output:
       in_header: PEC-header.html
       after_body: PEC-header.html
   word_document: default
-  pdf_document:
+  pdf_train_document:
     highlight: zenburn
     toc: yes
 ---
@@ -55,8 +55,7 @@ Siguiendo las principales etapas de un proyecto analítico, las diferentes tarea
   
   4.2. Comprobación de la normalidad y homogeneidad de la varianza.
   
-  4.3. Aplicación de pruebas estadísticas para comparar los grupos de datos. En función de los datos y el objetivo del estudio, aplicar pruebas de contraste de hipótesis,correlaciones, regresiones, etc. Aplicar al menos tres métodos de análisis
-diferentes.
+  4.3. Aplicación de pruebas estadísticas para comparar los grupos de datos. En función de los datos y el objetivo del estudio, aplicar pruebas de contraste de hipótesis,correlaciones, regresiones, etc. Aplicar al menos tres métodos de análisis diferentes.
 
 5. Representación de los resultados a partir de tablas y gráficas.
 
@@ -119,27 +118,176 @@ A partir de este conjunto de datos se pretende dar respuesta a muchas de las cue
 
 ## Integración y selección de los datos
 
-En este apartado se procede a cargar el dataset *train* puesto que es sobre el que se construyen los modelos. Puesto que la inferencia de modelos y su prueba no son el objetivo de esta asignatura, se decide prescindir de realizar lo mismo con el conjunto de *test*.
+En este apartado se procede a cargar el dataset *train* y *test*, ya que sobre el primero se construyen los modelos y sobre el segundo se realiza la fase de test.
 
 A continuación, se muestran algunos registros e información general de los datos que servirá para posteriormente proceder a la limpieza a adaptación de los datos.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 
 # Carga de librerías
+library(psych)
+library(Hmisc)
+library(psych)
+
 
 # Carga de los datasets
-df <- read.csv("train.csv", header=T, sep=",")
+df_train <- read.csv("train.csv", header=T, sep=",")
+df_test <- read.csv("test.csv", header=T, sep=",")
 
 # Visualización de algunos registros del dataset
-head(df,10)
-tail(df,10)
+head(df_train,5)
+tail(df_train,5)
 
 # Datos estadísticos básicos
-summary(df)
+summary(df_train)
 
 # Estructura y tipo de los datos
-str(df)
+str(df_train)
 ```
 
 ## Limpieza de los datos
 
+### Análisis de valores vacíos y/o nulos
+
+En primer lugar se realiza un análisis de los valores nulos o vacíos y, posteriormente, se procede a eliminar variables con poco valor significativo para el análisis de datos.
+
+*Nota*: Estos valores están representados en el dataset por NA o "". No aparecen otros típicos como " " o "?".
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+# Análisis de valores nulos o vacíos
+colMeans(is.na(df_train))
+colMeans(df_train =="")
+```
+
+Tal y como se puede comprobar, la variable *Cabin* posee un 77% de valores nulos o vacíos. Por tanto, se procede a prescindir de dicha variable ya que no tiene sentido inferir tal elevada cantidad de valores. 
+
+Por otro lado, la variable *Age* posee casi un 20% de valores nulos; en este caso concreto, si bien es una cifra considerable, la significancia de este atributo puede ser relevante y, por tanto, se mantiene. En un análisis posterior, se determinará si se infieren estos valores o no y ver cómo afecta a los distintos estadísticos. Por ejemplo, una opción podría ser sustituir los valores por la media/mediana en tanto que exista un comportamiento de normalidad.
+
+Por último, se observa que la variable *Embarked* posee un 0.2% de valores nulos. En este sentido, al tratarse de una variable cualitativa, se procede a inferir dichos valores con el valor más representado.
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Se eliminan las variables Name, Ticket y Cabin
+df_train <- df_train[,-c(4, 9, 11)]
+
+# Inferencia de valores nulos más representativo (S - Southampton)
+table(df_train$Embarked)
+df_train$Embarked <- replace(df_train$Embarked, which(is.na(df_train$Embarked)), 'S')
+```
+
+### Conversión y adaptación de los datos
+
+Además de suprimir la variable ***Cabin***, se eliminan del conjunto de datos las variables ***name*** y ***Ticket*** puesto que son identificativos unívocos que no aportan valor y cuya funcionalidad ya viene dada por la variable ***PassengerID***.
+
+Por último, se procede a adaptar los datos para facilitar su posterior análisis y realizando la conversión de tipos de algunas variables.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+#Factorización
+df_train$Survived <- factor(df_train$Survived, levels = c(0,1), labels= c("No", "Yes"))
+df_train$Pclass <- factor(df_train$Pclass, levels = c(1,2,3), labels= c("1st", "2nd", "3rd"))
+df_train$Sex <- factor(df_train$Sex, levels= c("female", "male"), labels = c("Female", "Male"))
+df_train$Embarked <- factor(df_train$Sex, levels= c("C","Q","S"), labels = c("Cherbourg","Queenstown", "Southampton"))
+
+```
+
+### Análisis de valores extremos
+
+A continuación, se procede a visualizar y analizar los posibles *outliers* asociados a las variables contínuas.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+# Index. de variables cuantitativas
+v_var_cuant <- c(5:8)
+
+# Estadísticas de valores nulos o vacíos
+par(mfrow=c(1,4))
+for(i in v_var_cuant){
+   boxplot(df_train[,i], main=colnames(df_train)[i])
+}
+```
+
+Es importante considerar que estas observaciones pueden afectar a los estadísticos y, por tanto, hacer análisis sesgado de los datos (por ejemplo, incrementan significativamente el error en la varianza de los datos). Se puede observar algunas muestras fuera de lo común, si bien, no parecen cifras muy desproporcionadas. Por tanto, se tendrán en cuenta para un primer análisis.
+
+*Nota:* En análisis posteriores es interesante ver cómo afectan estos datos a los estadísticos y tomar otro tipo de decisiones sobre qué hacer con estos.
+
+## Análisis de datos
+
+### Medidas de dispersión
+
+Se analizan otros estadísticos como la varianza o la desviación estándar y se aplica el test de Shapiro-Wilk para comprobar la normalidad de las variables a través de contraste de hipótesis y, a partir del cual, si el p-value es menor al nivel de significancia (0.05), se rechaza la hipótesis nula (distribución normal). 
+
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+v_var <- vector(length = length(v_var_cuant))
+v_sd <- vector(length = length(v_var_cuant))
+v_pvalue_shapiro <- vector(length = length(v_var_cuant))
+for (i in seq_along(v_var_cuant)){
+  v_var[i] <- var(df_train[,v_var_cuant[i]],na.rm = TRUE)
+  v_sd[i] <- sd(df_train[,v_var_cuant[i]] ,na.rm = TRUE)
+  v_pvalue_shapiro[i] <- as.double(shapiro.test(df_train[,v_var_cuant[i]])["p.value"])
+}
+medidas <- data.frame(colnames(df_train[,v_var_cuant]),round(v_var,4), round(v_sd,4), round(v_pvalue_shapiro,4))
+
+colnames(medidas) <- c("attr", "varianza", "desviación estándar", "shapiro p-value")
+medidas_dispersion
+```
+
+
+Por tanto, se puede concluir que las variables no atienden a una distribución normal. A continuación, se muestra la distribución de las variables en comparación con la normal donde se verifica lo anteriormente expuesto. Además, se muestra un Q-Q plot para comprobar si los cuantiles o no siguen una distribución lineal. No obstante, puesto que hay un número considerable de muestras, en algunos casos podría considerarse normalidad a través del Teorema del Límite Central (quizá únicamente en la variable *age*).
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Histograma vs. normal
+multi.hist(x = df_train[,v_var_cuant], dcol = c("blue", "red"), dlty = c("dotted", "solid"))
+
+# Gráfico Q-Q
+par(mfrow = c(1, 4))
+for (i in v_var_cuant){
+  qqnorm(df_train[,i], main=colnames(df)[i], col = "red")
+  qqline(df_train[,i])
+}
+```
+
+### Homocedasticidad
+
+Puesto que los datos no siguen una distribución normal, se aplicará el test de Fligner-Killeen como alternativa no paramétrica para evaluar la igual de varianzas. La hipótesis nula asume igualdad de varianzas en los diferentes grupos de datos (homocedasticidad), por lo que p-valores inferiores al nivel de significancia indicarán heterocedasticidad.
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+fligner.test(Age ~ SibSp, data = df_norm)
+fligner.test(Age ~ Parch, data = df_norm)
+fligner.test(Age ~ Fare, data = df_norm)
+fligner.test(SibSp ~ Parch, data = df_norm)
+fligner.test(SibSp ~ Fare, data = df_norm)
+fligner.test(Parch ~ Fare, data = df_norm)
+```
+
+Se verifica que todas las variables dos a dos cumplen heterocedasticidad.
+
+### Correlación
+
+A continuación, se procede a analizar la correlación entre las variables, para lo que se hace necesario normalizar las variables. En este apartado, conociendo que la variable *age* tiende a la normalidad, se procede a inferir los valores NA por la mediana (más robusta que la media). 
+
+En cualquier caso, se aplica el test de correlación de Spearman, especialmente para casos que no cumplen normalidad.
+
+*Nota*: Se puede comprobar que la inferencia no afecta prácticamente a las medidas de tendencia central (por su normalidad) y las de dispersión se ven ligeramente reducidas.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+# Inferencia de valores nulos en Age 
+df_train$Age <- replace(df_train$Age, which(is.na(df_train$Age)), median(df_train$Age, na.rm=TRUE))
+
+# Normalización
+df_norm <- as.data.frame(scale(df_train[,v_var_cuant]))
+
+# Matriz de correlación y p-value
+rcorr(as.matrix(df_norm), type = "spearman")
+
+# Visualización de correlación y los diagramas de dispersión
+corrplot.mixed(cor(df_norm, method = "spearman"))
+pairs.panels(x = df_norm, ellipses = FALSE, lm = TRUE, method = "spearman", hist.col = "cadetblue1")
+```
+
+Se observa que no existen fuertes correlaciones entre las variables cuantitativas (si se establece como umbral |0.5|). Además, se comprueba que son estadísticamente significativos.
