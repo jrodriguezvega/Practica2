@@ -128,6 +128,7 @@ A continuación, se muestran algunos registros e información general de los dat
 library(psych)
 library(Hmisc)
 library(psych)
+library(corrplot)
 
 
 # Carga de los datasets
@@ -228,10 +229,10 @@ for (i in seq_along(v_var_cuant)){
   v_sd[i] <- sd(df_train[,v_var_cuant[i]] ,na.rm = TRUE)
   v_pvalue_shapiro[i] <- as.double(shapiro.test(df_train[,v_var_cuant[i]])["p.value"])
 }
-medidas <- data.frame(colnames(df_train[,v_var_cuant]),round(v_var,4), round(v_sd,4), round(v_pvalue_shapiro,4))
+medidas_dispersion_shap <- data.frame(colnames(df_train[,v_var_cuant]),round(v_var,4), round(v_sd,4), round(v_pvalue_shapiro,4))
 
-colnames(medidas) <- c("attr", "varianza", "desviación estándar", "shapiro p-value")
-medidas_dispersion
+colnames(medidas_dispersion_shap) <- c("attr", "varianza", "desviación estándar", "shapiro p-value")
+medidas_dispersion_shap
 ```
 
 
@@ -256,15 +257,15 @@ Puesto que los datos no siguen una distribución normal, se aplicará el test de
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 
-fligner.test(Age ~ SibSp, data = df_norm)
-fligner.test(Age ~ Parch, data = df_norm)
-fligner.test(Age ~ Fare, data = df_norm)
-fligner.test(SibSp ~ Parch, data = df_norm)
-fligner.test(SibSp ~ Fare, data = df_norm)
-fligner.test(Parch ~ Fare, data = df_norm)
+fligner.test(Age ~ SibSp, data = df_train)
+fligner.test(Age ~ Parch, data = df_train)
+fligner.test(Age ~ Fare, data = df_train)
+fligner.test(SibSp ~ Parch, data = df_train)
+fligner.test(SibSp ~ Fare, data = df_train)
+fligner.test(Parch ~ Fare, data = df_train)
 ```
 
-Se verifica que todas las variables dos a dos cumplen heterocedasticidad.
+Se verifica que todas las variables dos a dos cumplen heterocedasticidad al tener todas un variable de p-value inferior al nivel de significancia (0.05).
 
 ### Correlación
 
