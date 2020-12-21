@@ -130,6 +130,7 @@ library(Hmisc)
 library(psych)
 library(corrplot)
 library(gridExtra)
+library(C50)
 
 
 # Carga de los datasets
@@ -295,28 +296,42 @@ corrplot.mixed(cor(df_norm, method = "spearman"))
 pairs.panels(x = df_norm, ellipses = FALSE, lm = TRUE, method = "spearman", hist.col = "cadetblue1")
 ```
 
-Se observa que no existen fuertes correlaciones entre las variables cuantitativas (si se establece como umbral |0.5|). Además, se comprueba que son estadísticamente significativos.
+Se observa que no existen fuertes correlaciones entre las variables cuantitativas (si se establece como umbral |0.5|). Además, se comprueba que son estadísticamente significativos y, por tanto, improbable que este resultado se haya debido al azar.
 
 
 ### Regresión
 
-A continuación, se procede a analizar la relación existente entre algunas variables y vercómo afectan estas con respecto a la variable clasificadora *Survived* (variable dicotómica). Para ello, se aplicará un modelo de regresión logística. Por ejemplo, vamos a ver cómo afecta el sexo, la edad y la clase del billete. De esta forma, se infiere un modelo considerando la variable *Survived* como variable dependiente y los atributos *PClass, Sex y Age *como variables regresoras o independientes.
+A continuación, se procede a analizar la relación existente entre algunas variables y vercómo afectan estas con respecto a la variable clasificadora *Survived* (variable dicotómica). Para ello, se aplicarán modelos de regresión logística. 
+
+Por ejemplo, vamos a ver cómo afecta el sexo, la edad y la clase del billete. De esta forma, se infiere un modelo considerando la variable *Survived* como variable dependiente y los atributos *PClass, Sex y Age *como variables regresoras o independientes en combinación unas de otras.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 attach(df_train)
 
 # Generación del modelo
-glm <- glm(Survived~Pclass+Sex+Age, family=binomial(link=logit))
-summary(glm)
+glm1 <- glm(Survived~Pclass, family=binomial(link=logit))
+glm2 <- glm(Survived~Pclass+Sex, family=binomial(link=logit))
+glm3 <- glm(Survived~Pclass+Sex+Age, family=binomial(link=logit))
 
-# Odds Ratio
-exp(coefficients(glm))
+# Tabla de coeficientes IC
+tabla.coeficientes <- data.frame(c(1:3), c(glm1$aic,glm2$aic,glm3$aic))      
+colnames(tabla.coeficientes) <- c("Modelo", "AIC")
+tabla.coeficientes
 ```
 
-Según los resultados, se observa que todas las variables son altamente significativas (Pr(>|z|) < 0.05). El índice AIC (Akaike Information Criterion) relaciona la bondad junto con la complejidad del modelo y será de utilidad de cara a comparar con otros modelos (cuanto menor sea el índice, mejor se comportará el modelo). Puesto que hay índices de OR inferiores a uno, se hace necesario calcular su inversa para poder valorar la contribución relativa de las distintas variables en el modelo. Por tanto:
+El índice AIC (Akaike Information Criterion) relaciona la bondad junto con la complejidad del modelo y será de utilidad de cara a comparar con otros modelos (cuanto menor sea el índice, mejor se comportará el modelo). Tal y como se puede observar, a mayor número de variables mejor comportamiento del modelo. Por tanto, se parte del último modelo (glm3) para continuar con el análisis:
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
-1/exp(coefficients(glm))[2:5]
+summary(glm3)
+
+# Odds Ratio
+exp(coefficients(glm3))
+```
+
+Según los resultados, se observa que todas las variables son altamente significativas (Pr(>|z|) < 0.05). Puesto que hay índices de OR inferiores a uno, se hace necesario calcular su inversa para poder valorar la contribución relativa de las distintas variables en el modelo. Por tanto:
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+1/exp(coefficients(glm3))[2:5]
 ```
 
 De esta forma, se observa que la variable que más impacto genera en este modelo sobre la variable independiente *Survived* es la variable *Sex* (un indícativo adicional de que era uno de los principales criterios para abordar el salvamento y que, por tanto, tuvo que ver en el tipo de personas que lograron salvarse).
@@ -336,8 +351,53 @@ No obstante, si se realiza un análisis comparativo de las variables en término
 
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
+
 g1 <- ggplot(data = df_original[!(is.na(df_original$Age)),],aes(x=Age,fill=Survived))+geom_histogram(binwidth =3)
 g2 <- ggplot(data = df_original[!(is.na(df_original$Age)),],aes(x=Age,fill=Survived))+geom_histogram(binwidth = 3,position="fill")+ylab("Frecuencia")
 
 grid.arrange(g1, g2,  nrow = 1)
 ```
+
+***Nota***: Este es otro de los puntos donde se hace retrospectiva, ver cómo afecta al modelo y su calidad la inferencia de los valores nulos y el tratamiento de outliers.
+
+### Árbol de decisión
+
+El modelo de análisis a aplicar se basa en el algoritmo C5.0, una evolución del C4.5 y el ID3, el cual utiliza una pospoda por promoción automática. Este modelo permite sólo variables de salida categórica, mientras que las de entrada pueden ser de naturaleza continua o categórica. Este modelo se obtiene a partir de la función C5.0() y permite su conversión a reglas. Se aplica sobre las mismas variables anteriormente evaluadas:
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+set.seed(1234)
+
+# Modelo C5.0 en árbol
+model_C50t <- C5.0(Survived~Age+Pclass+Sex , df_train)
+
+# Detalle del modelo
+summary(model_C50t)
+```
+Tal y como se puede observar este modelo consigue una tasa de error de 19%%. La variable de más peso en este tipo modelo es *Sex*, al igual que sucedía en el caso anterior.
+
+A continuación, generamos el conjunto de reglas y se visualiza el árbol generado para su posterior análisis:
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+set.seed(1234)
+
+# Modelo C5.0 en árbol
+model_C50r <- C5.0(Survived~Age+Pclass+Sex , df_train,, rules = TRUE)
+
+# Detalle del modelo
+summary(model_C50r)
+
+# Visualización
+plot(model_C50t)
+```
+
+
+Analizando las reglas, se puede observar que un pasajero de menos de 9 años, que viajaba en 1ªo 2ª clase, de sexo masculino, se salvaba con 92,3% de validez. También resulta interesante ver que una persona con edad superior a 38 años y que viajase en 3ª clase no sobreviviría con un 90,6% de validez.
+
+Si se observa el gráfico del árbol, se pude observar que un pasajero de sexo femenino que viajaba en 1ª o 2ª clase tenía una alta probabilidad de sobrevivir.
+
+
+******
+# Conclusión
+******
