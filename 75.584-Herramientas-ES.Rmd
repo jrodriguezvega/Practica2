@@ -129,6 +129,7 @@ library(psych)
 library(Hmisc)
 library(psych)
 library(corrplot)
+library(gridExtra)
 
 
 # Carga de los datasets
@@ -174,7 +175,7 @@ df_train <- df_train[,-c(4, 9, 11)]
 
 # Inferencia de valores nulos más representativo (S - Southampton)
 table(df_train$Embarked)
-df_train$Embarked <- replace(df_train$Embarked, which(is.na(df_train$Embarked)), 'S')
+df_train$Embarked <- replace(df_train$Embarked, which((df_train$Embarked =="")), 'S')
 ```
 
 ### Conversión y adaptación de los datos
@@ -188,7 +189,11 @@ Por último, se procede a adaptar los datos para facilitar su posterior análisi
 df_train$Survived <- factor(df_train$Survived, levels = c(0,1), labels= c("No", "Yes"))
 df_train$Pclass <- factor(df_train$Pclass, levels = c(1,2,3), labels= c("1st", "2nd", "3rd"))
 df_train$Sex <- factor(df_train$Sex, levels= c("female", "male"), labels = c("Female", "Male"))
-df_train$Embarked <- factor(df_train$Sex, levels= c("C","Q","S"), labels = c("Cherbourg","Queenstown", "Southampton"))
+df_train$Embarked <- factor(df_train$Embarked, levels= c("C","Q","S"), labels = c("Cherbourg","Queenstown", "Southampton"))
+
+
+# Se guarda el dataframe original con la adaptación de datos
+df_original <- df_train
 
 ```
 
@@ -217,7 +222,6 @@ Es importante considerar que estas observaciones pueden afectar a los estadísti
 ### Medidas de dispersión
 
 Se analizan otros estadísticos como la varianza o la desviación estándar y se aplica el test de Shapiro-Wilk para comprobar la normalidad de las variables a través de contraste de hipótesis y, a partir del cual, si el p-value es menor al nivel de significancia (0.05), se rechaza la hipótesis nula (distribución normal). 
-
 
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
@@ -252,7 +256,7 @@ for (i in v_var_cuant){
 
 ### Homocedasticidad
 
-Puesto que los datos no siguen una distribución normal, se aplicará el test de Fligner-Killeen como alternativa no paramétrica para evaluar la igual de varianzas. La hipótesis nula asume igualdad de varianzas en los diferentes grupos de datos (homocedasticidad), por lo que p-valores inferiores al nivel de significancia indicarán heterocedasticidad.
+Puesto que los datos no siguen una distribución normal, se aplicará el test de Fligner-Killeen como alternativa no paramétrica para evaluar la igual de varianzas basada también en el contraste de hipótesis. La hipótesis nula asume igualdad de varianzas en los diferentes grupos de datos (homocedasticidad), por lo que p-valores inferiores al nivel de significancia indicarán heterocedasticidad.
 
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
@@ -269,11 +273,11 @@ Se verifica que todas las variables dos a dos cumplen heterocedasticidad al tene
 
 ### Correlación
 
-A continuación, se procede a analizar la correlación entre las variables, para lo que se hace necesario normalizar las variables. En este apartado, conociendo que la variable *age* tiende a la normalidad, se procede a inferir los valores NA por la mediana (más robusta que la media). 
+A continuación, se procede a analizar la correlación entre las variables, para lo que se hace necesario normalizar las variables. En este apartado, considerando que la variable *age* podría tender a la normalidad, se procede a inferir los valores NA por la mediana (más robusta que la media).
 
 En cualquier caso, se aplica el test de correlación de Spearman, especialmente para casos que no cumplen normalidad.
 
-*Nota*: Se puede comprobar que la inferencia no afecta prácticamente a las medidas de tendencia central (por su normalidad) y las de dispersión se ven ligeramente reducidas.
+*Nota*: Se puede comprobar que la inferencia no afecta prácticamente a las medidas de tendencia central (por su normalidad) y las de dispersión se ven ligeramente reducidas. No obstante, sería relevante probar otros métodos de inferencia como las regresiones, modelos bayesianos o los árboles de decisión (kNN, missForest, etc.), entre otros; y comprobar como afecta a los estadísticos y a su vez a los diferentes modelos a aplicar.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 
@@ -292,3 +296,48 @@ pairs.panels(x = df_norm, ellipses = FALSE, lm = TRUE, method = "spearman", hist
 ```
 
 Se observa que no existen fuertes correlaciones entre las variables cuantitativas (si se establece como umbral |0.5|). Además, se comprueba que son estadísticamente significativos.
+
+
+### Regresión
+
+A continuación, se procede a analizar la relación existente entre algunas variables y vercómo afectan estas con respecto a la variable clasificadora *Survived* (variable dicotómica). Para ello, se aplicará un modelo de regresión logística. Por ejemplo, vamos a ver cómo afecta el sexo, la edad y la clase del billete. De esta forma, se infiere un modelo considerando la variable *Survived* como variable dependiente y los atributos *PClass, Sex y Age *como variables regresoras o independientes.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+attach(df_train)
+
+# Generación del modelo
+glm <- glm(Survived~Pclass+Sex+Age, family=binomial(link=logit))
+summary(glm)
+
+# Odds Ratio
+exp(coefficients(glm))
+```
+
+Según los resultados, se observa que todas las variables son altamente significativas (Pr(>|z|) < 0.05). El índice AIC (Akaike Information Criterion) relaciona la bondad junto con la complejidad del modelo y será de utilidad de cara a comparar con otros modelos (cuanto menor sea el índice, mejor se comportará el modelo). Puesto que hay índices de OR inferiores a uno, se hace necesario calcular su inversa para poder valorar la contribución relativa de las distintas variables en el modelo. Por tanto:
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+1/exp(coefficients(glm))[2:5]
+```
+
+De esta forma, se observa que la variable que más impacto genera en este modelo sobre la variable independiente *Survived* es la variable *Sex* (un indícativo adicional de que era uno de los principales criterios para abordar el salvamento y que, por tanto, tuvo que ver en el tipo de personas que lograron salvarse).
+
+Si interpretamos los coeficientes parciales de la variable *Sex* (-2.611494) se observa que es negativo. Esto quiere decir que la probabilidad de que una persona sea sexo masculino influye indirectamente en que esta misma persona sea salvada; o lo que es lo mismo, reduce la probabilidad de ser salvada. Lo mismo sucede con ser pasajeros de 2º y 3º clase. Esto verifica en parte las suposiciones de que se priorizaba los miembros de 1º clase, así como las mujeres y los niños.
+
+Sin embargo, según este modelo, se observa que la variable *Age* posee un OR próximo a 1; esto es un indicativo que prácticamente no existe asociación entre la variable respuesta y la covariable en dicho modelo. Esto puede verse en la siguiente visualización:
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+ggplot(data = df_train, mapping=aes(x = Age, y = Survived, color=Survived)) +
+   geom_boxplot() +
+   geom_jitter(width = 0.1) +
+   theme_bw() + theme(legend.position = "none")
+```
+
+No obstante, si se realiza un análisis comparativo de las variables en términos absolutos y de frencuencia, se observa que la proporción de niños salvados es más elevada que en el resto de edades:
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+g1 <- ggplot(data = df_original[!(is.na(df_original$Age)),],aes(x=Age,fill=Survived))+geom_histogram(binwidth =3)
+g2 <- ggplot(data = df_original[!(is.na(df_original$Age)),],aes(x=Age,fill=Survived))+geom_histogram(binwidth = 3,position="fill")+ylab("Frecuencia")
+
+grid.arrange(g1, g2,  nrow = 1)
+```
