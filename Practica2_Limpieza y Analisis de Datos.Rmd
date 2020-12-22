@@ -299,6 +299,21 @@ pairs.panels(x = df_norm, ellipses = FALSE, lm = TRUE, method = "spearman", hist
 Se observa que no existen fuertes correlaciones entre las variables cuantitativas (si se establece como umbral |0.5|). Además, se comprueba que son estadísticamente significativos y, por tanto, improbable que este resultado se haya debido al azar.
 
 
+### Selección de datos
+
+Puesto que la variable clasificadora es *Survived* y la cual determina la persona sobrevivió o no, se va a analizar a través de un modelo logístico la influencia de cada una de las variables en combinación de otras de forma que se pueda observar cuáles son las más significativas y a partir de las cuales se determinará realizar el análisis de datos:
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+attach(df_train)
+
+set.seed(1234)
+
+summary(glm(Survived~., df_train, family=binomial(link=logit)))
+```
+
+Tal y como se puede observar, las variables más significativas son *Age, Pclass y Sex*. Por tanto, será sobre estas variables sobre las que se hará el análisis de datos.
+
+
 ### Regresión
 
 A continuación, se procede a analizar la relación existente entre algunas variables y vercómo afectan estas con respecto a la variable clasificadora *Survived* (variable dicotómica). Para ello, se aplicarán modelos de regresión logística. 
@@ -306,7 +321,8 @@ A continuación, se procede a analizar la relación existente entre algunas vari
 Por ejemplo, vamos a ver cómo afecta el sexo, la edad y la clase del billete. De esta forma, se infiere un modelo considerando la variable *Survived* como variable dependiente y los atributos *PClass, Sex y Age *como variables regresoras o independientes en combinación unas de otras.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
-attach(df_train)
+
+set.seed(1234)
 
 # Generación del modelo
 glm1 <- glm(Survived~Pclass, family=binomial(link=logit))
@@ -399,5 +415,5 @@ Si se observa el gráfico del árbol, se pude observar que un pasajero de sexo f
 
 
 ******
-# Conclusión
+# Conclusiones
 ******
