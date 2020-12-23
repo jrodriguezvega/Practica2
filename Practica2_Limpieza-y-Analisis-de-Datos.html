@@ -437,17 +437,13 @@ summary {
 <ol style="list-style-type: decimal">
 <li><p>Descripción del dataset. ¿Por qué es importante y qué pregunta/problema pretende responder?</p></li>
 <li><p>Integración y selección de los datos de interés a analizar.</p></li>
-<li><p>Limpieza de los datos.</p></li>
-</ol>
+<li><p>Limpieza de los datos.</p>
 <p>3.1. ¿Los datos contienen ceros o elementos vacíos? ¿Cómo gestionarías cada uno de estos casos?</p>
-<p>3.2. Identificación y tratamiento de valores extremos.</p>
-<ol start="4" style="list-style-type: decimal">
-<li>Análisis de los datos.</li>
-</ol>
+<p>3.2. Identificación y tratamiento de valores extremos.</p></li>
+<li><p>Análisis de los datos.</p>
 <p>4.1. Selección de los grupos de datos que se quieren analizar/comparar (planificación de los análisis a aplicar).</p>
 <p>4.2. Comprobación de la normalidad y homogeneidad de la varianza.</p>
-<p>4.3. Aplicación de pruebas estadísticas para comparar los grupos de datos. En función de los datos y el objetivo del estudio, aplicar pruebas de contraste de hipótesis,correlaciones, regresiones, etc. Aplicar al menos tres métodos de análisis diferentes.</p>
-<ol start="5" style="list-style-type: decimal">
+<p>4.3. Aplicación de pruebas estadísticas para comparar los grupos de datos. En función de los datos y el objetivo del estudio, aplicar pruebas de contraste de hipótesis,correlaciones, regresiones, etc. Aplicar al menos tres métodos de análisis diferentes.</p></li>
 <li><p>Representación de los resultados a partir de tablas y gráficas.</p></li>
 <li><p>Resolución del problema. A partir de los resultados obtenidos, ¿cuáles son las conclusiones? ¿Los resultados permiten responder al problema?</p></li>
 </ol>
@@ -458,41 +454,42 @@ summary {
 <hr />
 <div id="descripción-del-dataset" class="section level2">
 <h2><span class="header-section-number">2.1</span> Descripción del dataset</h2>
-<p>El RMS Titanic fue un transatlántico británico, el mayor barco de pasajeros del mundo al finalizar su construcción, que se hundió durante la noche del 14 y la madrugada del 15 de abril de 1912 durante su viaje inaugural desde Southampton a Nueva York. En el hundimiento del Titanic murieron 1496 personas de las 2208 que iban a bordo, lo que convierte a esta catástrofe en uno de los mayores naufragios de la historia ocurridos en tiempo de paz. Construido entre 1909 y 1912 en los astilleros de Harland &amp; Wolff en Belfast, el Titanic era el segundo de los tres buques que formaban la clase Olympic, propiedad de la naviera White Star Line, junto al RMS Olympic y, posteriormente, el HMHS Britannic (Wikipedia).</p>
-<p>El conjunto de datos está dividido en dos conjuntos de datos:</p>
+<p>El RMS Titanic fue un transatlántico británico, el mayor barco de pasajeros del mundo al finalizar su construcción, que se hundió durante la noche del 14 y la madrugada del 15 de abril de 1912 durante su viaje inaugural desde Southampton a Nueva York. En el hundimiento del Titanic murieron 1496 personas de las 2208 que iban a bordo, lo que convierte a esta catástrofe en uno de los mayores naufragios de la historia ocurridos en tiempo de paz. Construido entre 1909 y 1912 en los astilleros de Harland &amp; Wolff en Belfast, el Titanic era el segundo de los tres buques que formaban la clase Olympic, propiedad de la naviera White Star Line, junto al RMS Olympic y, posteriormente, el HMHS Britannic <a href="https://es.wikipedia.org/wiki/RMS_Titanic">(Wikipedia)</a>.</p>
+<p>El conjunto de datos está dividido en dos subconjuntos de datos:</p>
 <ul>
-<li><p><strong><em>train.csv</em></strong>: conjunto de pasajeros para elaborar los modelos de aprendizaje. Ya están clasificados (o sobrevivieron o murieron).</p></li>
-<li><p><strong><em>test.csv</em></strong>: conjunto de pasajeros no clasificados para aplicar la predicción de los modelos.</p></li>
+<li><p><strong><em>train.csv</em></strong>: datos de entrenamiento. Contiene toda la información sobre los pasajeros, incluyendo si finalmente murieron o sobrevivieron. Esta será nuestra variable objetivo a predecir y nos permitirá elaborar modelos de aprendizaje supervisado.</p></li>
+<li><p><strong><em>test.csv</em></strong>: datos para test. Contiene la misma información salvo si el pasajero sobrevivió. Sobre este subconjunto de datos se podrá aplicar el modelo elaborado mediante el subconjunto de entrenamiento para predecir si los pasajeros sobrevivieron o no en base a sus atributos o variables independientes.</p></li>
 </ul>
-<p>Es importante señalar que el dataset no contiene los datos de todos los pasajeros del barco. El dataset de entrenamiento únicamente contiene 891 registros con 12 variables:</p>
+<p>El número total de pasajeros del RMS Titanic fue de 1496, sin embargo, en el subconjunto de datos de entrenamiento se tienen 891 entradas, mientras que para el subconjunto de datos de test se tienen 418 registros. La suma total de registros asciende a 1309, por lo que es importante señalar que el dataset no contiene información de todos los pasajeros del barco. El dataset tiene 12 atributos, 11 serán variables independientes y la restante será la variable dependiente, aunque como ya se comentaba esta última no estará presente en el juego de datos para test. A continuación se describen los diferentes atributos:</p>
 <ul>
-<li><p><strong><em>PassengerID</em></strong>: ID unívoco del pasajero</p></li>
-<li><p><strong><em>Survived</em></strong>: el pasajero sobrevive o no (0 = No, 1 = Yes)</p></li>
-<li><p><strong><em>Pclass</em></strong>: Clase del billete (1 = 1st, 2 = 2nd, 3 = 3rd)</p></li>
-<li><p><strong><em>Name</em></strong>: Nombre del pasajero</p></li>
-<li><p><strong><em>Sex</em></strong>: Género del pasajero (“male” o “female”)</p></li>
-<li><p><strong><em>Age</em></strong>: Edad del pasajero</p></li>
-<li><p><strong><em>AibSp</em></strong>: nº de hermanos/cónyuges del pasajero abordo del barco</p></li>
-<li><p><strong><em>Parch</em></strong>: nº de padres/hijos del pasajero abordo del barco</p></li>
-<li><p><strong><em>Ticket</em></strong>: nº de billete del pasajero</p></li>
-<li><p><strong><em>Fare</em></strong>: Tarifa del pasajero</p></li>
-<li><p><strong><em>Ticket</em></strong>: nº de billete del pasajero</p></li>
-<li><p><strong><em>Cabin</em></strong>: nº de cabina del pasajero</p></li>
-<li><p><strong><em>Embarked</em></strong>: Puerto de embarque del pasajero (C = Cherbourg, Q = Queenstown, S = Southampton)</p></li>
+<li><p><strong><em>PassengerID</em></strong>: Variable de tipo numérica. ID unívoco del pasajero.</p></li>
+<li><p><strong><em>Survived</em></strong>: Variable numérica. Indica si el pasajero sobrevive o no (0 = No, 1 = Yes). Se trata de la variable dependiente, que se pretende predecir.</p></li>
+<li><p><strong><em>Pclass</em></strong>: Variable numérica. Identifica la clase en la que viajaba el pasajero o clase del billete (1 = 1st, 2 = 2nd, 3 = 3rd).</p></li>
+<li><p><strong><em>Name</em></strong>: Variable tipo texto. Contiene el nombre del pasajero.</p></li>
+<li><p><strong><em>Sex</em></strong>: Variable categórica. Refleja el género del pasajero (“male” o “female”).</p></li>
+<li><p><strong><em>Age</em></strong>: Variable numérica. Determina la edad del pasajero.</p></li>
+<li><p><strong><em>SibSp</em></strong>: Variable numérica. Indica el número de hermanos/cónyuges del pasajero abordo del barco.</p></li>
+<li><p><strong><em>Parch</em></strong>: Variable numérica. Informa sobre el número de padres/hijos del pasajero abordo del barco.</p></li>
+<li><p><strong><em>Ticket</em></strong>: Variable de tipo texto. Hace referencia al número o identificador del billete del pasajero.</p></li>
+<li><p><strong><em>Fare</em></strong>: Variable numérica. Muestra la tarifa del billete del pasajero.</p></li>
+<li><p><strong><em>Cabin</em></strong>: Variable categórica/texto. Contiene el número de cabina en la que viajaba el pasajero.</p></li>
+<li><p><strong><em>Embarked</em></strong>: Variable categórica. Indica el puerto de embarque del pasajero (C = Cherbourg, Q = Queenstown, S = Southampton).</p></li>
 </ul>
-<p>A partir de este conjunto de datos se pretende dar respuesta a muchas de las cuestiones que siempre han rodeado a la supervencia de los pasajeros del Titanic. De esta forma, se puede ver qué condiciones (variables) influyeron principalmente a la hora de que una persona sobreviese o no. Por ejemplo:</p>
+<p>A partir de este conjunto de datos se pretende dar respuesta a muchas de las cuestiones que siempre han rodeado a la supervivencia de los pasajeros del Titanic. De esta forma, se puede ver qué condiciones (variables) influyeron principalmente a la hora de que una persona sobreviese o no. Por ejemplo:</p>
 <ul>
 <li><p>¿Se priorizó a los pasajeros de primera clase sobre el resto?</p></li>
 <li><p>¿Fueron las mujeres y los niños los primeros que embarcaron en los botes salvavidas?</p></li>
-<li><p>¿Qué tipos de pasajero tuvieron más probabilidades de sobrevivir?</p></li>
+<li><p>¿Qué tipos de pasajeros tuvieron más probabilidades de sobrevivir?</p></li>
 <li><p>¿Qué tipo de pasajero procedía de cada punto de embarque?</p></li>
 <li><p>Etc.</p></li>
 </ul>
 </div>
 <div id="integración-y-selección-de-los-datos" class="section level2">
 <h2><span class="header-section-number">2.2</span> Integración y selección de los datos</h2>
-<p>En este apartado se procede a cargar el dataset <em>train</em> y <em>test</em>, ya que sobre el primero se construyen los modelos y sobre el segundo se realiza la fase de test.</p>
-<p>A continuación, se muestran algunos registros e información general de los datos que servirá para posteriormente proceder a la limpieza a adaptación de los datos.</p>
+<p>En este apartado se procede a cargar el dataset <em>train</em> y <em>test</em>, ya que con el primero se construirán los modelos y sobre el segundo se realizará la fase de test. Dado que ambos subconjuntos tienen un propósito distinto se mantendrán en 2 dataframes distintos.</p>
+<p>En caso de querer unificarlos, esto se podría hacer mediante la función <code>rbind</code>, para lo que sería necesario crear la variable dependiente en el subconjunto de test y dejarla vacía. Posteriormente, se podría comprobar que no existen duplicidades de registros con la función <code>duplicated</code> o <code>unique</code>.</p>
+<p>Existe un identificador único para cada uno de los pasajeros como veíamos en el apartado anterior, que lo identifica de forma unívoca independientemente de si se encuentra en el subconjunto de entrenamiento o de test.</p>
+<p>A continuación, se muestran algunos registros e información general de los datos que servirá para posteriormente proceder a la limpieza y adaptación de los datos.</p>
 <pre class="r"><code># Carga de librerías
 library(psych)
 library(Hmisc)
@@ -580,6 +577,7 @@ str(df_train)</code></pre>
 ##  $ Fare       : num  7.25 71.28 7.92 53.1 8.05 ...
 ##  $ Cabin      : chr  &quot;&quot; &quot;C85&quot; &quot;&quot; &quot;C123&quot; ...
 ##  $ Embarked   : chr  &quot;S&quot; &quot;C&quot; &quot;S&quot; &quot;S&quot; ...</code></pre>
+<p>Para nuestro caso de estudio no se van a descartar registros por que carezcan de interés, ya que no nos vamos a centrar en un segmento de edad concreto, sexo o puerto de embarque, sino que se quieren considerar todos los pasajeros con sus correspondientes características para extraer conclusiones en base a ellas.</p>
 </div>
 <div id="limpieza-de-los-datos" class="section level2">
 <h2><span class="header-section-number">2.3</span> Limpieza de los datos</h2>
@@ -878,7 +876,7 @@ summary(model_C50t)</code></pre>
 ## C5.0.formula(formula = Survived ~ Age + Pclass + Sex, data = df_train)
 ## 
 ## 
-## C5.0 [Release 2.07 GPL Edition]      Tue Dec 22 17:24:39 2020
+## C5.0 [Release 2.07 GPL Edition]      Wed Dec 23 08:34:46 2020
 ## -------------------------------
 ## 
 ## Class specified by attribute `outcome&#39;
@@ -937,7 +935,7 @@ summary(model_C50r)</code></pre>
 ##  = TRUE)
 ## 
 ## 
-## C5.0 [Release 2.07 GPL Edition]      Tue Dec 22 17:24:39 2020
+## C5.0 [Release 2.07 GPL Edition]      Wed Dec 23 08:34:47 2020
 ## -------------------------------
 ## 
 ## Class specified by attribute `outcome&#39;

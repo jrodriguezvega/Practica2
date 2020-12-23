@@ -116,7 +116,11 @@ A partir de este conjunto de datos se pretende dar respuesta a muchas de las cue
 
 ## Integración y selección de los datos
 
-En este apartado se procede a cargar el dataset *train* y *test*, ya que con el primero se construirán los modelos y sobre el segundo se realizará la fase de test.
+En este apartado se procede a cargar el dataset *train* y *test*, ya que con el primero se construirán los modelos y sobre el segundo se realizará la fase de test. Dado que ambos subconjuntos tienen un propósito distinto se mantendrán en 2 dataframes distintos.
+
+En caso de querer unificarlos, esto se podría hacer mediante la función `rbind`, para lo que sería necesario crear la variable dependiente en el subconjunto de test y dejarla vacía. Posteriormente, se podría comprobar que no existen duplicidades de registros con la función `duplicated` o `unique`.
+
+Existe un identificador único para cada uno de los pasajeros como veíamos en el apartado anterior, que lo identifica de forma unívoca independientemente de si se encuentra en el subconjunto de entrenamiento o de test.
 
 A continuación, se muestran algunos registros e información general de los datos que servirá para posteriormente proceder a la limpieza y adaptación de los datos.
 
@@ -145,6 +149,8 @@ summary(df_train)
 # Estructura y tipo de los datos
 str(df_train)
 ```
+
+Para nuestro caso de estudio no se van a descartar registros porque carezcan de interés, ya que no nos vamos a centrar en un segmento de edad concreto, sexo o puerto de embarque, sino que se quieren considerar todos los pasajeros con sus correspondientes características para extraer conclusiones en base a ellas.
 
 ## Limpieza de los datos
 
