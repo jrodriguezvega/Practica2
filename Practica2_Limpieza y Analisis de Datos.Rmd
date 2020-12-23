@@ -152,11 +152,13 @@ str(df_train)
 
 Para nuestro caso de estudio no se van a descartar registros porque carezcan de interés, ya que no nos vamos a centrar en un segmento de edad concreto, sexo o puerto de embarque, sino que se quieren considerar todos los pasajeros con sus correspondientes características para extraer conclusiones en base a ellas.
 
+En esta primera inspección de los datos ya se puede intuir que habrá ciertos atributos que tendrán más relevancia que otros, e incluso otros, como el nombre del pasajero, que carecerán de interés alguno.
+
 ## Limpieza de los datos
 
 ### Análisis de valores vacíos y/o nulos
 
-En primer lugar se realiza un análisis de los valores nulos o vacíos y, posteriormente, se procede a eliminar variables con poco valor significativo para el análisis de datos.
+En primer lugar, se realiza un análisis de los valores nulos o vacíos y, posteriormente, se procede a eliminar variables con poco valor significativo para el análisis de datos.
 
 *Nota*: Estos valores están representados en el dataset por NA o "". No aparecen otros típicos como " " o "?".
 
@@ -167,27 +169,30 @@ colMeans(is.na(df_train))
 colMeans(df_train =="")
 ```
 
-Tal y como se puede comprobar, la variable *Cabin* posee un 77% de valores nulos o vacíos. Por tanto, se procede a prescindir de dicha variable ya que no tiene sentido inferir tal elevada cantidad de valores. 
+A la vista de los datos se pueden extraer las siguientes conclusiones:
 
-Por otro lado, la variable *Age* posee casi un 20% de valores nulos; en este caso concreto, si bien es una cifra considerable, la significancia de este atributo puede ser relevante y, por tanto, se mantiene. En un análisis posterior, se determinará si se infieren estos valores o no y ver cómo afecta a los distintos estadísticos. Por ejemplo, una opción podría ser sustituir los valores por la media/mediana en tanto que exista un comportamiento de normalidad.
+* La variable *Cabin* posee un 77% de valores nulos o vacíos. Por tanto, se prescindirá de dicha variable ya que no tiene sentido inferir tal elevada cantidad de valores. 
 
-Por último, se observa que la variable *Embarked* posee un 0.2% de valores nulos. En este sentido, al tratarse de una variable cualitativa, se procede a inferir dichos valores con el valor más representado.
+* La variable *Age* posee casi un 20% de valores nulos; en este caso concreto, si bien es una cifra considerable, la significancia de este atributo puede ser relevante y, por tanto, se mantiene. En un análisis posterior, se determinará si se infieren estos valores o no y se verá cómo afecta a los distintos estadísticos. Por ejemplo, una opción podría ser sustituir los valores por la media/mediana en tanto que exista un comportamiento de normalidad.
 
+* Por último, se observa que la variable *Embarked* posee un 0.2% de valores nulos. En este sentido, al tratarse de una variable cualitativa, se procede a inferir dichos valores con el valor más representado.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Inferencia de valores nulos más representativo (S - Southampton)
+table(df_train$Embarked)
+df_train$Embarked <- replace(df_train$Embarked, which(df_train$Embarked ==""), 'S')
+```
+
+Se va prescindir de los atributos  **Name**, **Ticket** y **cabin**, pues no tienen relevancia a la hora de extraer conclusiones de los datos, ya que identifican al pasajero en cierto modo y para esta función se mantiene el atributo **PassengerID**. Además, como se acaba de comentar, en el caso de la variable **cabin** se tiene un porcentaje de valores perdidos muy elevado.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 # Se eliminan las variables Name, Ticket y Cabin
 df_train <- df_train[,-c(4, 9, 11)]
-
-# Inferencia de valores nulos más representativo (S - Southampton)
-table(df_train$Embarked)
-df_train$Embarked <- replace(df_train$Embarked, which((df_train$Embarked =="")), 'S')
 ```
 
 ### Conversión y adaptación de los datos
 
-Además de suprimir la variable ***Cabin***, se eliminan del conjunto de datos las variables ***name*** y ***Ticket*** puesto que son identificativos unívocos que no aportan valor y cuya funcionalidad ya viene dada por la variable ***PassengerID***.
-
-Por último, se procede a adaptar los datos para facilitar su posterior análisis y realizando la conversión de tipos de algunas variables.
+Para trabajar correctamente con los datos, se van a realizar algunas conversiones de los tipos de algunos de ellos. Esto nos permitirá realizar análisis de forma más eficiente y obtener resultados más interpretables. Comenzamos convirtiendo a tipo factor las variables *Pclass*, *Sex*,  *Embarked* y *Survive*.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 #Factorización
@@ -202,12 +207,23 @@ df_original <- df_train
 
 ```
 
+Existen otro tipo de conversiones que se podrían hacer de los datos, como la normalización de las variables numéricas entre los valores [0,1] mediante transformaciones *min-max* o la normalización *z-score* que resta la media a la variable y la divide por su desviación estándar.
+
+En el caso de que las variables no presenten una distribución normal, sería interesante realizar transformaciones de tipo Box-COx para poder mejorar su normalidad y su homocedasticidad.
+
+Dado que aún no conocemos la distribución de nuestros atributos no se van a realizar en este momento, dejando este tipo de conversión en los datos para más adelante según veamos la normalidad y homocedasticidad de las variables.
+
+Por último, algunas variable como por ejemplo *age* parecen candidatas para realizar sobre ellas un proceso de discretización. Esto nos permitiría hacer análisis sobre ellas que aportarán mayor información y se podría optar por diferentes niveles de precisión. Algunas posibles discretizaciones en el caso de la variable *age* podría ser en rangos de edad de 10 años; por "etapas" del tipo niños, adolescentes, jóvenes, adultos y jubilados; o sencillamente limitarnos a distinguir entre niños y adultos.
+
+Una vez más, vamos a esperar a realizar un análisis sobre la distribución de las variables, que nos permitirá mejorar la completitud y calidad de nuestros datos realizando el tratamiento sobre valores perdidos y posteriormente las mencionadas transformaciones.
+
+Como paso previo, y también necesario en el proceso de limpieza del juego de datos, se va a realizar un análisis de *outliers*.
+
 ### Análisis de valores extremos
 
-A continuación, se procede a visualizar y analizar los posibles *outliers* asociados a las variables contínuas.
+A continuación, se procede a visualizar y analizar los posibles *outliers* asociados a las variables continuas.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
-
 # Index. de variables cuantitativas
 v_var_cuant <- c(5:8)
 
@@ -223,6 +239,10 @@ Es importante considerar que estas observaciones pueden afectar a los estadísti
 *Nota:* En análisis posteriores es interesante ver cómo afectan estos datos a los estadísticos y tomar otro tipo de decisiones sobre qué hacer con estos.
 
 ## Análisis de datos
+
+### Planificación de los análisis a realizar
+
+
 
 ### Medidas de dispersión
 
