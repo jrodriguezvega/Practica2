@@ -209,11 +209,11 @@ df_original <- df_train
 
 Existen otro tipo de conversiones que se podrían hacer de los datos, como la normalización de las variables numéricas entre los valores [0,1] mediante transformaciones *min-max* o la normalización *z-score* que resta la media a la variable y la divide por su desviación estándar.
 
-En el caso de que las variables no presenten una distribución normal, sería interesante realizar transformaciones de tipo Box-COx para poder mejorar su normalidad y su homocedasticidad.
+En el caso de que las variables no presenten una distribución normal, sería interesante realizar transformaciones de tipo *Box-Cox* para poder mejorar su normalidad y su homocedasticidad.
 
 Dado que aún no conocemos la distribución de nuestros atributos no se van a realizar en este momento, dejando este tipo de conversión en los datos para más adelante según veamos la normalidad y homocedasticidad de las variables.
 
-Por último, algunas variable como por ejemplo *age* parecen candidatas para realizar sobre ellas un proceso de discretización. Esto nos permitiría hacer análisis sobre ellas que aportarán mayor información y se podría optar por diferentes niveles de precisión. Algunas posibles discretizaciones en el caso de la variable *age* podría ser en rangos de edad de 10 años; por "etapas" del tipo niños, adolescentes, jóvenes, adultos y jubilados; o sencillamente limitarnos a distinguir entre niños y adultos.
+Por último, algunas variable como por ejemplo *age* parecen candidatas para realizar sobre ellas un proceso de discretización. Esto nos permitiría hacer análisis sobre ellas que aportarán mayor información y se podría optar por diferentes niveles de precisión. Algunas posibles discretizaciones en el caso de la variable *age* podría ser en rangos de edad de 10 años; por "etapas" del tipo *niños*, *adolescentes*, *jóvenes*, *adultos* y *jubilados*; o sencillamente limitarnos a distinguir entre *niños* y *adultos*.
 
 Una vez más, vamos a esperar a realizar un análisis sobre la distribución de las variables, que nos permitirá mejorar la completitud y calidad de nuestros datos realizando el tratamiento sobre valores perdidos y posteriormente las mencionadas transformaciones.
 
@@ -246,7 +246,7 @@ Es importante considerar que estas observaciones pueden afectar a los estadísti
 
 ### Medidas de dispersión
 
-Se analizan otros estadísticos como la varianza o la desviación estándar y se aplica el test de Shapiro-Wilk para comprobar la normalidad de las variables a través de contraste de hipótesis y, a partir del cual, si el p-value es menor al nivel de significancia (0.05), se rechaza la hipótesis nula (distribución normal). 
+Se analizan otros estadísticos como la varianza o la desviación estándar y se aplica el test de *Shapiro-Wilk* para comprobar la normalidad de las variables a través de contraste de hipótesis y, a partir del cual, si el p-value es menor al nivel de significancia (0.05), se rechaza la hipótesis nula (distribución normal). 
 
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
@@ -265,7 +265,7 @@ medidas_dispersion_shap
 ```
 
 
-Por tanto, se puede concluir que las variables no atienden a una distribución normal. A continuación, se muestra la distribución de las variables en comparación con la normal donde se verifica lo anteriormente expuesto. Además, se muestra un Q-Q plot para comprobar si los cuantiles o no siguen una distribución lineal. No obstante, puesto que hay un número considerable de muestras, en algunos casos podría considerarse normalidad a través del Teorema del Límite Central (quizá únicamente en la variable *age*).
+Por tanto, se puede concluir que las variables no atienden a una distribución normal. A continuación, se muestra la distribución de las variables en comparación con la normal donde se verifica lo anteriormente expuesto. Además, se muestra un Q-Q plot para comprobar si los cuantiles siguen o no una distribución lineal. No obstante, puesto que hay un número considerable de muestras, en algunos casos podría considerarse normalidad a través del Teorema del Límite Central (quizá únicamente en la variable *age*).
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 # Histograma vs. normal
@@ -274,14 +274,14 @@ multi.hist(x = df_train[,v_var_cuant], dcol = c("blue", "red"), dlty = c("dotted
 # Gráfico Q-Q
 par(mfrow = c(1, 4))
 for (i in v_var_cuant){
-  qqnorm(df_train[,i], main=colnames(df)[i], col = "red")
+  qqnorm(df_train[,i], main=colnames(df_train)[i], col = "red")
   qqline(df_train[,i])
 }
 ```
 
 ### Homocedasticidad
 
-Puesto que los datos no siguen una distribución normal, se aplicará el test de Fligner-Killeen como alternativa no paramétrica para evaluar la igual de varianzas basada también en el contraste de hipótesis. La hipótesis nula asume igualdad de varianzas en los diferentes grupos de datos (homocedasticidad), por lo que p-valores inferiores al nivel de significancia indicarán heterocedasticidad.
+Puesto que los datos no siguen una distribución normal, se aplicará el test de *Fligner-Killeen* como alternativa no paramétrica para evaluar la igualdad de varianzas basada también en el contraste de hipótesis. La hipótesis nula asume igualdad de varianzas en los diferentes grupos de datos (homocedasticidad), por lo que p-valores inferiores al nivel de significancia indicarán heterocedasticidad.
 
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
@@ -294,7 +294,7 @@ fligner.test(SibSp ~ Fare, data = df_train)
 fligner.test(Parch ~ Fare, data = df_train)
 ```
 
-Se verifica que todas las variables dos a dos cumplen heterocedasticidad al tener todas un variable de p-value inferior al nivel de significancia (0.05).
+Se verifica que todas las variables dos a dos cumplen heterocedasticidad al tener todas un p-value inferior al nivel de significancia (0.05).
 
 ### Correlación
 
@@ -340,7 +340,7 @@ Tal y como se puede observar, las variables más significativas son *Age, Pclass
 
 ### Regresión
 
-A continuación, se procede a analizar la relación existente entre algunas variables y vercómo afectan estas con respecto a la variable clasificadora *Survived* (variable dicotómica). Para ello, se aplicarán modelos de regresión logística. 
+A continuación, se procede a analizar la relación existente entre algunas variables y ver cómo afectan estas con respecto a la variable clasificadora *Survived* (variable dicotómica). Para ello, se aplicarán modelos de regresión logística. 
 
 Por ejemplo, vamos a ver cómo afecta el sexo, la edad y la clase del billete. De esta forma, se infiere un modelo considerando la variable *Survived* como variable dependiente y los atributos *PClass, Sex y Age *como variables regresoras o independientes en combinación unas de otras.
 
@@ -374,7 +374,7 @@ Según los resultados, se observa que todas las variables son altamente signific
 1/exp(coefficients(glm3))[2:5]
 ```
 
-De esta forma, se observa que la variable que más impacto genera en este modelo sobre la variable independiente *Survived* es la variable *Sex* (un indícativo adicional de que era uno de los principales criterios para abordar el salvamento y que, por tanto, tuvo que ver en el tipo de personas que lograron salvarse).
+De esta forma, se observa que la variable que más impacto genera en este modelo sobre la variable dependiente *Survived* es la variable *Sex* (un indicativo adicional de que era uno de los principales criterios para abordar el salvamento y que, por tanto, tuvo que ver en el tipo de personas que lograron salvarse).
 
 Si interpretamos los coeficientes parciales de la variable *Sex* (-2.611494) se observa que es negativo. Esto quiere decir que la probabilidad de que una persona sea sexo masculino influye indirectamente en que esta misma persona sea salvada; o lo que es lo mismo, reduce la probabilidad de ser salvada. Lo mismo sucede con ser pasajeros de 2º y 3º clase. Esto verifica en parte las suposiciones de que se priorizaba los miembros de 1º clase, así como las mujeres y los niños.
 
@@ -423,7 +423,7 @@ A continuación, generamos el conjunto de reglas y se visualiza el árbol genera
 set.seed(1234)
 
 # Modelo C5.0 en árbol
-model_C50r <- C5.0(Survived~Age+Pclass+Sex , df_train,, rules = TRUE)
+model_C50r <- C5.0(Survived~Age+Pclass+Sex , df_train, rules = TRUE)
 
 # Detalle del modelo
 summary(model_C50r)
