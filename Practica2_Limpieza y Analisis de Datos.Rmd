@@ -179,7 +179,7 @@ A la vista de los datos se pueden extraer las siguientes conclusiones:
 
 * Por último, se observa que la variable *Embarked* posee un 0.2% de valores nulos. En este sentido, al tratarse de una variable cualitativa, se procede a inferir dichos valores con el valor más representado.
 
-No obstante, se va a optar por imputar los valores perdidos de las variables *Age* y *Embarked* por medio de la función *KNN* del paquete *VIM*. Este método realiza la imputación basándose en los *k* vecinos más próximos, en este caso se toma el valor `k = 5`.
+No obstante, se va a optar por imputar los valores perdidos de las variables *Age* y *Embarked* por medio de la función *KNN* del paquete *VIM*. Este método realiza la imputación basándose en los *k* vecinos más próximos, en este caso se toma el valor `k = 10`.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 # Se sustituye la cadena vacía por NA antes de aplicar KNN
@@ -250,15 +250,21 @@ Es importante considerar que estas observaciones pueden afectar a los estadísti
 
 ## Análisis de datos
 
-
+En este apartado se va a estudiar en más detalle cómo son los datos y qué relación existe entre ellos.
 
 ### Planificación de los análisis a realizar
 
+Comentamos a continuación algunas de las premisas que se quieren comprobar en los siguientes apartados:
 
+* ¿Tuvieron los pasajeros de primera clase más probabilidades de salvarse que los de tercera clase?
+
+* ¿Se intentó salvar a mujeres y niños frente a hombres?
+
+* ¿Existió alguna preferencia a la hora de salvar a los pasajeros según su puerto de embarque?
 
 ### Medidas de dispersión
 
-Se analizan otros estadísticos como la varianza o la desviación estándar y se aplica el test de *Shapiro-Wilk* para comprobar la normalidad de las variables a través de contraste de hipótesis y, a partir del cual, si el p-value es menor al nivel de significancia (0.05), se rechaza la hipótesis nula (distribución normal). 
+En primer lugar, se analizan otros estadísticos como la varianza o la desviación estándar y se aplica el test de *Shapiro-Wilk* para comprobar la normalidad de las variables a través de contraste de hipótesis y, a partir del cual, si el p-value es menor al nivel de significancia (0.05), se rechaza la hipótesis nula (distribución normal). 
 
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
@@ -277,7 +283,7 @@ medidas_dispersion_shap
 ```
 
 
-Por tanto, se puede concluir que las variables no atienden a una distribución normal. A continuación, se muestra la distribución de las variables en comparación con la normal donde se verifica lo anteriormente expuesto. Además, se muestra un Q-Q plot para comprobar si los cuantiles siguen o no una distribución lineal. 
+Por tanto, se puede concluir que las variables no atienden a una distribución normal. A continuación, se muestra la distribución de las variables en comparación con la normal donde se verifica lo anteriormente expuesto. Además, se muestra un *Q-Q plot* para comprobar si los cuantiles siguen o no una distribución lineal. 
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 # Histograma vs. normal
@@ -295,12 +301,14 @@ No obstante, a la vista de las gráficas y puesto que hay un número considerabl
 
 ### Homocedasticidad
 
-Dado que para *Age* se ha supuesto normalidad por el *teorema central del límite* se usará el *test de Levene* para comprobar si existe homocedasticidad. Puesto que el resto de datos no siguen una distribución normal, se aplicará el *test de Fligner-Killeen* como alternativa no paramétrica para evaluar la igualdad de varianzas basada también en el contraste de hipótesis. Para ambos test, la hipótesis nula asume igualdad de varianzas en los diferentes grupos de datos, por lo que un p-valor inferior al nivel de significancia indicará heterocedasticidad.
+Dado que para *Age* se ha supuesto normalidad por el *teorema central del límite*, se usará el *test de Levene* para comprobar si existe homocedasticidad. Puesto que el resto de datos no siguen una distribución normal, se aplicará el *test de Fligner-Killeen* como alternativa no paramétrica para evaluar la igualdad de varianzas basada también en el contraste de hipótesis. Para ambos test, la hipótesis nula asume igualdad de varianzas en los diferentes grupos de datos, por lo que un p-valor inferior al nivel de significancia indicará heterocedasticidad.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Se comprueba si existe homocedasticidad
 leveneTest(Age ~ Pclass, data = df_train)
 leveneTest(Age ~ Sex, data = df_train)
 leveneTest(Age ~ Survived, data = df_train)
+# Se comparan de forma conjunta las variables SibSp y Parch
 fligner.test(SibSp+Parch ~ Pclass, data = df_train)
 fligner.test(SibSp+Parch ~ Survived, data = df_train)
 ```
@@ -309,11 +317,50 @@ Las conclusiones que se pueden extraer de estos test son los siguientes:
 
 * La variables *Age* presenta heterocedasticidad con *Pclass* y homocedasticidad con *Sex* y *Survived*. En las diferentes clases no habrá una varianza constante en la edad de los pasajeros; mientras que sí que la habrá en cuanto al sexo de los pasajeros y el hecho de si sobrevivieron o no.
 
-* La suma de las variables *SibSp*+*Parch*, que nos da una idea del tamaño de la familia con que viajaba a bordo el pasajero, presenta homocedasticidad con *Pclass*, por lo que la varianza del tamaño familiar no varía con la clases; sin embargo, vemos que sí que varía la varianza de esta cuando se tiene en cuenta si los individuos sobreviven o no.
+* La suma de las variables *SibSp*+*Parch*, que nos da una idea del tamaño de la familia con que viajaba a bordo el pasajero, presenta homocedasticidad con *Pclass*, por lo que la varianza del tamaño familiar no varía con la clases; sin embargo, vemos que sí que varía la varianza de ésta suma de variables cuando se tiene en cuenta si los individuos sobreviven o no.
+
+### Relación de la variable dependiente con las variables numéricas
+
+Dado que hemos asumido normalidad para la variable *Age* y hemos visto que presenta homocedasticidad con la variable dependiente *Survived*, vamos a aplicar la prueba de *t de student*, donde la hipótesis nula asume que las medias de los grupos de datos son las mismas.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+t.test(Age ~ Survived, data = df_train)
+```
+
+Para el caso de la variable *Age* se puede ver que en media no existen diferencias significativas.
+
+Vamos a comprobarlo para el resto de variables, pero dado que estas variables no presentan normalidad se realizará mediante el test de *Wilcoxon*, donde la hipótesis nula asume igualdad en la distribución para los diferentes grupos de la variable categórica.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+wilcox.test(SibSp+Parch ~ Survived, data = df_train)
+wilcox.test(Fare ~ Survived, data = df_train)
+```
+
+Para ambos casos vemos que no se puede determinar que la distribución de las variables es la misma en los diferentes grupos de la variable dependiente *Survived*.
+
+### Relación entre variables categóricas
+
+Para comprobar si existen diferencias significativas entre las variables categóricas de nuestro dataset, se va a utilizar el test de $\chi^2$. La hipótesis nula que asume este test es que no existen diferencias significativas entre los grupos de ambas variables.
+
+```{r}
+# Se comprueba si murieron igualmente hombres y mujeres
+table(df_train$Sex, df_train$Survived)
+chisq.test(table(df_train$Sex, df_train$Survived))
+
+# Si tuvo alguna influencia la clase en la que viajaba el pasajero
+table(df_train$Pclass, df_train$Survived)
+chisq.test(table(df_train$Pclass, df_train$Survived))
+
+# Existió alguna relación con el puerto de embarque
+table(df_train$Embarked, df_train$Survived)
+chisq.test(table(df_train$Embarked, df_train$Survived))
+```
+
+A la vista de los datos, vemos que tanto el sexo del pasajero, la clase en la que viajó, como el puerto desde el que embarcó tuvieron más o menos repercusión en si finalmente consiguió salvarse o no, pues que no se cumple la hipótesis nula en ninguno de los 3 casos analizados y no se puede decir que no existen diferencias en la variable objetivo respecto a estos hechos.
 
 ### Correlación
 
-A continuación, se procede a analizar la correlación entre las variables cuantitativas, para lo que se hace necesario utilizar las variables normalizadas en el apartado anterior.
+A continuación, se procede a analizar la correlación entre las variables cuantitativas, para lo que se hace necesario utilizar las variables normalizadas, recurrimos a ellas ya que se normalizaron anteriormente.
 
 Dado que por el *teorema central del límite* se ha supuesto normalidad para la variable *Age* se podría pensar en utilizar el *coeficiente de correlación de Pearson*, pero dado que ninguna de las otras variables cuantitativas presenta normalidad se aplicará el *coeficiente de Spearman*, que no asume ninguna distribución de los datos.
 
@@ -329,10 +376,9 @@ pairs.panels(x = df_norm, ellipses = FALSE, lm = TRUE, method = "spearman", hist
 
 Se observa que no existen fuertes correlaciones entre las variables cuantitativas (si se establece como umbral |0.5|). Además, se comprueba que son estadísticamente significativos y, por tanto, improbable que este resultado se haya debido al azar.
 
-
 ### Selección de datos
 
-Puesto que la variable clasificadora es *Survived* y la cual determina la persona sobrevivió o no, se va a analizar a través de un modelo logístico la influencia de cada una de las variables en combinación de otras de forma que se pueda observar cuáles son las más significativas y a partir de las cuales se determinará realizar el análisis de datos:
+Puesto que la variable clasificadora es *Survived* y la cual determina la persona sobrevivió o no, se va a analizar a través de un modelo logístico la influencia de cada una de las variables en combinación de otras de forma que se pueda observar cuáles son las más significativas y a partir de las cuales se determinará realizar el análisis de datos. Esto se hace de forma complementaria a los análisis realizados hasta ahora y que ya nos dan una idea bastante acertada de la relación que existe entre los distintos atributos sobre la variable dependiente.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 attach(df_train)
@@ -343,7 +389,6 @@ summary(glm(Survived~., df_train, family=binomial(link=logit)))
 ```
 
 Tal y como se puede observar, las variables más significativas son *Age, Pclass y Sex*. Por tanto, será sobre estas variables sobre las que se hará el análisis de datos.
-
 
 ### Regresión
 
