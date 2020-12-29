@@ -127,6 +127,8 @@ A continuación, se muestran algunos registros e información general de los dat
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 
 # Carga de librerías
+library(car)
+library(VIM)
 library(psych)
 library(Hmisc)
 library(psych)
@@ -173,14 +175,17 @@ A la vista de los datos se pueden extraer las siguientes conclusiones:
 
 * La variable *Cabin* posee un 77% de valores nulos o vacíos. Por tanto, se prescindirá de dicha variable ya que no tiene sentido inferir tal elevada cantidad de valores. 
 
-* La variable *Age* posee casi un 20% de valores nulos; en este caso concreto, si bien es una cifra considerable, la significancia de este atributo puede ser relevante y, por tanto, se mantiene. En un análisis posterior, se determinará si se infieren estos valores o no y se verá cómo afecta a los distintos estadísticos. Por ejemplo, una opción podría ser sustituir los valores por la media/mediana en tanto que exista un comportamiento de normalidad.
+* La variable *Age* posee casi un 20% de valores nulos; en este caso concreto, si bien es una cifra considerable, la significancia de este atributo puede ser relevante y, por tanto, se mantiene. Por ejemplo, una opción podría ser sustituir los valores por la media/mediana en tanto que exista un comportamiento de normalidad.
 
 * Por último, se observa que la variable *Embarked* posee un 0.2% de valores nulos. En este sentido, al tratarse de una variable cualitativa, se procede a inferir dichos valores con el valor más representado.
 
+No obstante, se va a optar por imputar los valores perdidos de las variables *Age* y *Embarked* por medio de la función *KNN* del paquete *VIM*. Este método realiza la imputación basándose en los *k* vecinos más próximos, en este caso se toma el valor `k = 5`.
+
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
-# Inferencia de valores nulos más representativo (S - Southampton)
-table(df_train$Embarked)
-df_train$Embarked <- replace(df_train$Embarked, which(df_train$Embarked ==""), 'S')
+# Se sustituye la cadena vacía por NA antes de aplicar KNN
+df_train$Embarked[df_train$Embarked == ""]= NA
+df_train$Age <- kNN(df_train, k = 10)$Age
+df_train$Embarked <- kNN(df_train, k = 10)$Embarked
 ```
 
 Se va prescindir de los atributos  **Name**, **Ticket** y **cabin**, pues no tienen relevancia a la hora de extraer conclusiones de los datos, ya que identifican al pasajero en cierto modo y para esta función se mantiene el atributo **PassengerID**. Además, como se acaba de comentar, en el caso de la variable **cabin** se tiene un porcentaje de valores perdidos muy elevado.
@@ -207,26 +212,25 @@ df_original <- df_train
 
 ```
 
-Existen otro tipo de conversiones que se podrían hacer de los datos, como la normalización de las variables numéricas entre los valores [0,1] mediante transformaciones *min-max* o la normalización *z-score* que resta la media a la variable y la divide por su desviación estándar.
+Existen otro tipo de conversiones que se podrían hacer de los datos, como la normalización de las variables numéricas entre los valores [0,1] mediante transformaciones *min-max* o la normalización *z-score* que resta la media a la variable y la divide por su desviación estándar. Utilizaremos la normalización *z-score* por medio de la función *scale* para normalizar las variables cuantitativas.
+
+```{r}
+# Index. de variables cuantitativas
+v_var_cuant <- c(5:8)
+
+# Normalizamos las variables cuantitativas
+df_norm <- scale(df_train[,v_var_cuant])
+```
 
 En el caso de que las variables no presenten una distribución normal, sería interesante realizar transformaciones de tipo *Box-Cox* para poder mejorar su normalidad y su homocedasticidad.
 
-Dado que aún no conocemos la distribución de nuestros atributos no se van a realizar en este momento, dejando este tipo de conversión en los datos para más adelante según veamos la normalidad y homocedasticidad de las variables.
-
 Por último, algunas variable como por ejemplo *age* parecen candidatas para realizar sobre ellas un proceso de discretización. Esto nos permitiría hacer análisis sobre ellas que aportarán mayor información y se podría optar por diferentes niveles de precisión. Algunas posibles discretizaciones en el caso de la variable *age* podría ser en rangos de edad de 10 años; por "etapas" del tipo *niños*, *adolescentes*, *jóvenes*, *adultos* y *jubilados*; o sencillamente limitarnos a distinguir entre *niños* y *adultos*.
-
-Una vez más, vamos a esperar a realizar un análisis sobre la distribución de las variables, que nos permitirá mejorar la completitud y calidad de nuestros datos realizando el tratamiento sobre valores perdidos y posteriormente las mencionadas transformaciones.
-
-Como paso previo, y también necesario en el proceso de limpieza del juego de datos, se va a realizar un análisis de *outliers*.
 
 ### Análisis de valores extremos
 
 A continuación, se procede a visualizar y analizar los posibles *outliers* asociados a las variables continuas.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
-# Index. de variables cuantitativas
-v_var_cuant <- c(5:8)
-
 # Estadísticas de valores nulos o vacíos
 par(mfrow=c(1,4))
 for(i in v_var_cuant){
@@ -234,11 +238,19 @@ for(i in v_var_cuant){
 }
 ```
 
-Es importante considerar que estas observaciones pueden afectar a los estadísticos y, por tanto, hacer análisis sesgado de los datos (por ejemplo, incrementan significativamente el error en la varianza de los datos). Se puede observar algunas muestras fuera de lo común, si bien, no parecen cifras muy desproporcionadas. Por tanto, se tendrán en cuenta para un primer análisis.
+Observando los datos considerados como *outliers* vemos que son valores que destacan considerablemente sobre la media, pero vamos a analizar si se tratan de valores que pueden ser válidos:
 
-*Nota:* En análisis posteriores es interesante ver cómo afectan estos datos a los estadísticos y tomar otro tipo de decisiones sobre qué hacer con estos.
+* *Age*: a bordo del Titanic se encontraban pasajeros de avanzada edad, viendo el resumen de los datos el máximo de la variable es 80 años. Este valor está por encima de la media pero se trata de un valor perfectamente válido, al igual que el resto de valores que aparecen como valores extremos.
+
+* *SibSp* y *Parch*: a la vista de los resultados se puede ver que la mayoría de pasajeros del Titanic no viajaron con toda la familia a bordo, o si así era, se trataban de familias de tamaño reducido. Sin embargo, se dan algunos casos donde viajaban familias con un número importante de hermanos y/o hijos a bordo. Por tanto, estos valores que aparecen como *outliers*, aunque son menos frecuentes sí que son valores válidos.
+
+* *Fare*: haciendo un análisis de los datos, se puede observar que los precios más altos se corresponden con los billetes de primera clase, incluso los más elevados tienen más de una cabina. A priori no hay nada que nos indique que estos precios son erróneos y que vayan a introducir errores en los resultados de nuestro análisis, por lo que de momento se van a dejar sin modificar.
+
+Es importante considerar que estas observaciones pueden afectar a los estadísticos y, por tanto, hacer análisis sesgado de los datos (por ejemplo, incrementan significativamente la varianza de los datos). No obstante, como se ha comentado, no parecen cifras muy desproporcionadas.
 
 ## Análisis de datos
+
+
 
 ### Planificación de los análisis a realizar
 
@@ -265,7 +277,7 @@ medidas_dispersion_shap
 ```
 
 
-Por tanto, se puede concluir que las variables no atienden a una distribución normal. A continuación, se muestra la distribución de las variables en comparación con la normal donde se verifica lo anteriormente expuesto. Además, se muestra un Q-Q plot para comprobar si los cuantiles siguen o no una distribución lineal. No obstante, puesto que hay un número considerable de muestras, en algunos casos podría considerarse normalidad a través del Teorema del Límite Central (quizá únicamente en la variable *age*).
+Por tanto, se puede concluir que las variables no atienden a una distribución normal. A continuación, se muestra la distribución de las variables en comparación con la normal donde se verifica lo anteriormente expuesto. Además, se muestra un Q-Q plot para comprobar si los cuantiles siguen o no una distribución lineal. 
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 # Histograma vs. normal
@@ -279,41 +291,36 @@ for (i in v_var_cuant){
 }
 ```
 
+No obstante, a la vista de las gráficas y puesto que hay un número considerable de muestras, en el caso de la variable *Age* vamos a considerar normalidad a través del *teorema central del límite* dado que tenemos un número de muestras superior a 30.
+
 ### Homocedasticidad
 
-Puesto que los datos no siguen una distribución normal, se aplicará el test de *Fligner-Killeen* como alternativa no paramétrica para evaluar la igualdad de varianzas basada también en el contraste de hipótesis. La hipótesis nula asume igualdad de varianzas en los diferentes grupos de datos (homocedasticidad), por lo que p-valores inferiores al nivel de significancia indicarán heterocedasticidad.
-
+Dado que para *Age* se ha supuesto normalidad por el *teorema central del límite* se usará el *test de Levene* para comprobar si existe homocedasticidad. Puesto que el resto de datos no siguen una distribución normal, se aplicará el *test de Fligner-Killeen* como alternativa no paramétrica para evaluar la igualdad de varianzas basada también en el contraste de hipótesis. Para ambos test, la hipótesis nula asume igualdad de varianzas en los diferentes grupos de datos, por lo que un p-valor inferior al nivel de significancia indicará heterocedasticidad.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
-
-fligner.test(Age ~ SibSp, data = df_train)
-fligner.test(Age ~ Parch, data = df_train)
-fligner.test(Age ~ Fare, data = df_train)
-fligner.test(SibSp ~ Parch, data = df_train)
-fligner.test(SibSp ~ Fare, data = df_train)
-fligner.test(Parch ~ Fare, data = df_train)
+leveneTest(Age ~ Pclass, data = df_train)
+leveneTest(Age ~ Sex, data = df_train)
+leveneTest(Age ~ Survived, data = df_train)
+fligner.test(SibSp+Parch ~ Pclass, data = df_train)
+fligner.test(SibSp+Parch ~ Survived, data = df_train)
 ```
 
-Se verifica que todas las variables dos a dos cumplen heterocedasticidad al tener todas un p-value inferior al nivel de significancia (0.05).
+Las conclusiones que se pueden extraer de estos test son los siguientes:
+
+* La variables *Age* presenta heterocedasticidad con *Pclass* y homocedasticidad con *Sex* y *Survived*. En las diferentes clases no habrá una varianza constante en la edad de los pasajeros; mientras que sí que la habrá en cuanto al sexo de los pasajeros y el hecho de si sobrevivieron o no.
+
+* La suma de las variables *SibSp*+*Parch*, que nos da una idea del tamaño de la familia con que viajaba a bordo el pasajero, presenta homocedasticidad con *Pclass*, por lo que la varianza del tamaño familiar no varía con la clases; sin embargo, vemos que sí que varía la varianza de esta cuando se tiene en cuenta si los individuos sobreviven o no.
 
 ### Correlación
 
-A continuación, se procede a analizar la correlación entre las variables, para lo que se hace necesario normalizar las variables. En este apartado, considerando que la variable *age* podría tender a la normalidad, se procede a inferir los valores NA por la mediana (más robusta que la media).
+A continuación, se procede a analizar la correlación entre las variables cuantitativas, para lo que se hace necesario utilizar las variables normalizadas en el apartado anterior.
 
-En cualquier caso, se aplica el test de correlación de Spearman, especialmente para casos que no cumplen normalidad.
-
-*Nota*: Se puede comprobar que la inferencia no afecta prácticamente a las medidas de tendencia central (por su normalidad) y las de dispersión se ven ligeramente reducidas. No obstante, sería relevante probar otros métodos de inferencia como las regresiones, modelos bayesianos o los árboles de decisión (kNN, missForest, etc.), entre otros; y comprobar como afecta a los estadísticos y a su vez a los diferentes modelos a aplicar.
+Dado que por el *teorema central del límite* se ha supuesto normalidad para la variable *Age* se podría pensar en utilizar el *coeficiente de correlación de Pearson*, pero dado que ninguna de las otras variables cuantitativas presenta normalidad se aplicará el *coeficiente de Spearman*, que no asume ninguna distribución de los datos.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 
-# Inferencia de valores nulos en Age 
-df_train$Age <- replace(df_train$Age, which(is.na(df_train$Age)), median(df_train$Age, na.rm=TRUE))
-
-# Normalización
-df_norm <- as.data.frame(scale(df_train[,v_var_cuant]))
-
 # Matriz de correlación y p-value
-rcorr(as.matrix(df_norm), type = "spearman")
+rcorr(df_norm, type = "spearman")
 
 # Visualización de correlación y los diagramas de dispersión
 corrplot.mixed(cor(df_norm, method = "spearman"))
