@@ -179,9 +179,10 @@ A la vista de los datos se pueden extraer las siguientes conclusiones:
 
 * Por último, se observa que la variable *Embarked* posee un 0.2% de valores nulos. En este sentido, al tratarse de una variable cualitativa, se procede a inferir dichos valores con el valor más representado.
 
-No obstante, se va a optar por imputar los valores perdidos de las variables *Age* y *Embarked* por medio de la función *KNN* del paquete *VIM*. Este método realiza la imputación basándose en los *k* vecinos más próximos, en este caso se toma el valor `k = 10`.
+No obstante, se va a optar por imputar los valores perdidos de las variables *Age* y *Embarked* por medio de la función *KNN* del paquete *VIM*. Este método realiza la imputación basándose en los *k* vecinos más próximos, en este caso se toma el valor `k = 10`. En variables cualitativas, el atributo más frecuente en los *k* registros más próximos se usa para hacer la imputación. Si la variable es cuantitativa, es el valor de la mediana de los k registros más próximos
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
+
 # Se sustituye la cadena vacía por NA antes de aplicar KNN
 df_train$Embarked[df_train$Embarked == ""]= NA
 df_train$Age <- kNN(df_train, k = 10)$Age
@@ -246,7 +247,7 @@ Observando los datos considerados como *outliers* vemos que son valores que dest
 
 * *Fare*: haciendo un análisis de los datos, se puede observar que los precios más altos se corresponden con los billetes de primera clase, incluso los más elevados tienen más de una cabina. A priori no hay nada que nos indique que estos precios son erróneos y que vayan a introducir errores en los resultados de nuestro análisis, por lo que de momento se van a dejar sin modificar.
 
-Es importante considerar que estas observaciones pueden afectar a los estadísticos y, por tanto, hacer análisis sesgado de los datos (por ejemplo, incrementan significativamente la varianza de los datos). No obstante, como se ha comentado, no parecen cifras muy desproporcionadas.
+Es importante considerar que estas observaciones pueden afectar a los estadísticos y, por tanto, hacer un análisis sesgado de los datos (por ejemplo, incrementan significativamente la varianza de los datos). No obstante, como se ha comentado, no parecen cifras muy desproporcionadas.
 
 ## Análisis de datos
 
@@ -319,9 +320,9 @@ Las conclusiones que se pueden extraer de estos test son los siguientes:
 
 * La suma de las variables *SibSp*+*Parch*, que nos da una idea del tamaño de la familia con que viajaba a bordo el pasajero, presenta homocedasticidad con *Pclass*, por lo que la varianza del tamaño familiar no varía con la clases; sin embargo, vemos que sí que varía la varianza de ésta suma de variables cuando se tiene en cuenta si los individuos sobreviven o no.
 
-### Relación de la variable dependiente con las variables numéricas
+### Relación de la variable Survived con las variables numéricas
 
-Dado que hemos asumido normalidad para la variable *Age* y hemos visto que presenta homocedasticidad con la variable dependiente *Survived*, vamos a aplicar la prueba de *t de student*, donde la hipótesis nula asume que las medias de los grupos de datos son las mismas.
+Dado que se puede asumir normalidad para la variable *Age* y hemos visto que presenta homocedasticidad con la variable *Survived* (a posteriori será la variable dependiente en nuestros modelos), vamos a aplicar la prueba de *t de student*, donde la hipótesis nula asume que las medias de los grupos de datos son las mismas.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 t.test(Age ~ Survived, data = df_train)
@@ -358,7 +359,7 @@ chisq.test(table(df_train$Embarked, df_train$Survived))
 
 A la vista de los datos, vemos que tanto el sexo del pasajero, la clase en la que viajó, como el puerto desde el que embarcó tuvieron más o menos repercusión en si finalmente consiguió salvarse o no, pues que no se cumple la hipótesis nula en ninguno de los 3 casos analizados y no se puede decir que no existen diferencias en la variable objetivo respecto a estos hechos.
 
-### Correlación
+### Correlación de variables cuantitativas
 
 A continuación, se procede a analizar la correlación entre las variables cuantitativas, para lo que se hace necesario utilizar las variables normalizadas, recurrimos a ellas ya que se normalizaron anteriormente.
 
