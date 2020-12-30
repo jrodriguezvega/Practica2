@@ -1,8 +1,15 @@
 ---
 title: 'Practica 2: Limpieza y análisis de datos'
-author: 'Juan Rodríguez Vega, Alejandro Gallardo Alberola'
+author: "Juan Rodríguez Vega, Alejandro Gallardo Alberola"
 date: "Enero 2021"
 output:
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+  word_document: default
+  pdf_train_document:
+    highlight: zenburn
+    toc: yes
   html_document:
     highlight: default
     number_sections: yes
@@ -12,10 +19,6 @@ output:
     includes:
       in_header: PEC-header.html
       after_body: PEC-header.html
-  word_document: default
-  pdf_train_document:
-    highlight: zenburn
-    toc: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -201,16 +204,11 @@ df_train <- df_train[,-c(4, 9, 11)]
 Para trabajar correctamente con los datos, se van a realizar algunas conversiones de los tipos de algunos de ellos. Esto nos permitirá realizar análisis de forma más eficiente y obtener resultados más interpretables. Comenzamos convirtiendo a tipo factor las variables *Pclass*, *Sex*,  *Embarked* y *Survive*.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
-#Factorización
+#Factorización de las variables categóricas
 df_train$Survived <- factor(df_train$Survived, levels = c(0,1), labels= c("No", "Yes"))
 df_train$Pclass <- factor(df_train$Pclass, levels = c(1,2,3), labels= c("1st", "2nd", "3rd"))
 df_train$Sex <- factor(df_train$Sex, levels= c("female", "male"), labels = c("Female", "Male"))
 df_train$Embarked <- factor(df_train$Embarked, levels= c("C","Q","S"), labels = c("Cherbourg","Queenstown", "Southampton"))
-
-
-# Se guarda el dataframe original con la adaptación de datos
-df_original <- df_train
-
 ```
 
 Existen otro tipo de conversiones que se podrían hacer de los datos, como la normalización de las variables numéricas entre los valores [0,1] mediante transformaciones *min-max* o la normalización *z-score* que resta la media a la variable y la divide por su desviación estándar. Utilizaremos la normalización *z-score* por medio de la función *scale* para normalizar las variables cuantitativas.
@@ -222,6 +220,8 @@ v_var_cuant <- c(5:8)
 # Normalizamos las variables cuantitativas
 df_norm <- scale(df_train[,v_var_cuant])
 ```
+
+Más adelante será necesario utilizar los datos normalizados, no obstante, se van a mantener sin normalizar ya que para mostrar los resultados resulta más intuitivo verlos en su escala natural.
 
 En el caso de que las variables no presenten una distribución normal, sería interesante realizar transformaciones de tipo *Box-Cox* para poder mejorar su normalidad y su homocedasticidad.
 
@@ -249,6 +249,19 @@ Observando los datos considerados como *outliers* vemos que son valores que dest
 
 Es importante considerar que estas observaciones pueden afectar a los estadísticos y, por tanto, hacer un análisis sesgado de los datos (por ejemplo, incrementan significativamente la varianza de los datos). No obstante, como se ha comentado, no parecen cifras muy desproporcionadas.
 
+### Generar archivo con datos tratados
+
+Se va a generar a continuación el fichero con los datos ya tratados tal y como se solicita en la práctica.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# El dataframe se llamará df_output
+df_output <- df_train
+# Se incluyen las variables cuantitativas normalizadas
+df_output[, v_var_cuant] <- df_norm
+# Se exporta a formato csv
+write.csv(df_output, file = "clean_data.csv", row.names = FALSE, col.names = TRUE)
+```
+
 ## Análisis de datos
 
 En este apartado se va a estudiar en más detalle cómo son los datos y qué relación existe entre ellos.
@@ -259,7 +272,7 @@ Comentamos a continuación algunas de las premisas que se quieren comprobar en l
 
 * ¿Tuvieron los pasajeros de primera clase más probabilidades de salvarse que los de tercera clase?
 
-* ¿Se intentó salvar a mujeres y niños frente a hombres?
+* ¿Se intentó salvar antes a mujeres y niños que a hombres?
 
 * ¿Existió alguna preferencia a la hora de salvar a los pasajeros según su puerto de embarque?
 
@@ -269,6 +282,7 @@ En primer lugar, se analizan otros estadísticos como la varianza o la desviaci�
 
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Cálculo de la var, sd y p-value para ver normalidad
 v_var <- vector(length = length(v_var_cuant))
 v_sd <- vector(length = length(v_var_cuant))
 v_pvalue_shapiro <- vector(length = length(v_var_cuant))
@@ -277,6 +291,7 @@ for (i in seq_along(v_var_cuant)){
   v_sd[i] <- sd(df_train[,v_var_cuant[i]] ,na.rm = TRUE)
   v_pvalue_shapiro[i] <- as.double(shapiro.test(df_train[,v_var_cuant[i]])["p.value"])
 }
+# Se muestran los datos en formato dataframe
 medidas_dispersion_shap <- data.frame(colnames(df_train[,v_var_cuant]),round(v_var,4), round(v_sd,4), round(v_pvalue_shapiro,4))
 
 colnames(medidas_dispersion_shap) <- c("attr", "varianza", "desviación estándar", "shapiro p-value")
@@ -318,21 +333,23 @@ Las conclusiones que se pueden extraer de estos test son los siguientes:
 
 * La variables *Age* presenta heterocedasticidad con *Pclass* y homocedasticidad con *Sex* y *Survived*. En las diferentes clases no habrá una varianza constante en la edad de los pasajeros; mientras que sí que la habrá en cuanto al sexo de los pasajeros y el hecho de si sobrevivieron o no.
 
-* La suma de las variables *SibSp*+*Parch*, que nos da una idea del tamaño de la familia con que viajaba a bordo el pasajero, presenta homocedasticidad con *Pclass*, por lo que la varianza del tamaño familiar no varía con la clases; sin embargo, vemos que sí que varía la varianza de ésta suma de variables cuando se tiene en cuenta si los individuos sobreviven o no.
+* La suma de las variables *SibSp*+*Parch*, que nos da una idea del tamaño de la familia con que viajaba a bordo el pasajero, presenta homocedasticidad con *Pclass*, por lo que la varianza del tamaño familiar no varía con la clases; sin embargo, vemos que sí que varía la varianza de esta suma de variables cuando se tiene en cuenta si los individuos sobreviven o no.
 
 ### Relación de la variable Survived con las variables numéricas
 
 Dado que se puede asumir normalidad para la variable *Age* y hemos visto que presenta homocedasticidad con la variable *Survived* (a posteriori será la variable dependiente en nuestros modelos), vamos a aplicar la prueba de *t de student*, donde la hipótesis nula asume que las medias de los grupos de datos son las mismas.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
+# test t de student Age vs Survived
 t.test(Age ~ Survived, data = df_train)
 ```
 
 Para el caso de la variable *Age* se puede ver que en media no existen diferencias significativas.
 
-Vamos a comprobarlo para el resto de variables, pero dado que estas variables no presentan normalidad se realizará mediante el test de *Wilcoxon*, donde la hipótesis nula asume igualdad en la distribución para los diferentes grupos de la variable categórica.
+Vamos a comprobarlo para el resto de variables, pero dado que estas variables no presentan normalidad se realizará mediante el test de *Wilcoxon* o *Mann-Whitney*, donde la hipótesis nula asume igualdad en la distribución para los diferentes grupos de la variable categórica. Ambos test se aplican indistintamente con la función *wilcox.test*.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Se comparan las distribuciones del resto de variables cuantitativas con la variable dependiente Survive
 wilcox.test(SibSp+Parch ~ Survived, data = df_train)
 wilcox.test(Fare ~ Survived, data = df_train)
 ```
@@ -366,7 +383,6 @@ A continuación, se procede a analizar la correlación entre las variables cuant
 Dado que por el *teorema central del límite* se ha supuesto normalidad para la variable *Age* se podría pensar en utilizar el *coeficiente de correlación de Pearson*, pero dado que ninguna de las otras variables cuantitativas presenta normalidad se aplicará el *coeficiente de Spearman*, que no asume ninguna distribución de los datos.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
-
 # Matriz de correlación y p-value
 rcorr(df_norm, type = "spearman")
 
@@ -379,40 +395,41 @@ Se observa que no existen fuertes correlaciones entre las variables cuantitativa
 
 ### Selección de datos
 
-Puesto que la variable clasificadora es *Survived* y la cual determina la persona sobrevivió o no, se va a analizar a través de un modelo logístico la influencia de cada una de las variables en combinación de otras de forma que se pueda observar cuáles son las más significativas y a partir de las cuales se determinará realizar el análisis de datos. Esto se hace de forma complementaria a los análisis realizados hasta ahora y que ya nos dan una idea bastante acertada de la relación que existe entre los distintos atributos sobre la variable dependiente.
+Puesto que la variable clasificadora *Survived* es dicotómica, la cual determina si la persona sobrevivió o no, se va a realizar un modelo logístico para analizar la influencia de cada una de las variables de forma que se pueda observar cuáles son las más significativas. Esto se hace de forma complementaria a los análisis realizados hasta ahora y que ya nos dan una idea bastante acertada de la relación que existe entre los distintos atributos sobre la variable dependiente.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 attach(df_train)
 
 set.seed(1234)
-
+# Modelo de regresión logarítmico
 summary(glm(Survived~., df_train, family=binomial(link=logit)))
 ```
 
-Tal y como se puede observar, las variables más significativas son *Age, Pclass y Sex*. Por tanto, será sobre estas variables sobre las que se hará el análisis de datos.
+Tal y como se puede observar, las variables más significativas son *Age, Pclass y Sex*. Por tanto, y teniendo presente la información recabada hasta ahora, será sobre estas variables sobre las que se centrará el análisis de datos.
 
 ### Regresión
 
-A continuación, se procede a analizar la relación existente entre algunas variables y ver cómo afectan estas con respecto a la variable clasificadora *Survived* (variable dicotómica). Para ello, se aplicarán modelos de regresión logística. 
+A continuación, se procede a analizar a través de regresión la relación existente entre las variables comentadas y se verá cómo afectan estas a la variable clasificadora *Survived* (variable dicotómica). Para ello, se aplicarán modelos de regresión logística. 
 
-Por ejemplo, vamos a ver cómo afecta el sexo, la edad y la clase del billete. De esta forma, se infiere un modelo considerando la variable *Survived* como variable dependiente y los atributos *PClass, Sex y Age *como variables regresoras o independientes en combinación unas de otras.
+Nos centraremos en el sexo, la edad y la clase del billete. De esta forma, se infiere un modelo considerando la variable *Survived* como variable dependiente y los atributos *PClass*, *Sex* y *Age* como variables regresoras o independientes en combinación unas de otras.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 
 set.seed(1234)
 
 # Generación del modelo
-glm1 <- glm(Survived~Pclass, family=binomial(link=logit))
-glm2 <- glm(Survived~Pclass+Sex, family=binomial(link=logit))
-glm3 <- glm(Survived~Pclass+Sex+Age, family=binomial(link=logit))
+glm1 <- glm(Survived~Pclass, data = df_train, family=binomial(link=logit))
+glm2 <- glm(Survived~Pclass+Sex, data = df_train, family=binomial(link=logit))
+glm3 <- glm(Survived~Pclass+Sex+Age, data = df_train, family=binomial(link=logit))
+glm4 <- glm(Survived~Pclass+Sex+Age+Embarked, data = df_train, family=binomial(link=logit))
 
 # Tabla de coeficientes IC
-tabla.coeficientes <- data.frame(c(1:3), c(glm1$aic,glm2$aic,glm3$aic))      
+tabla.coeficientes <- data.frame(c(1:4), c(glm1$aic,glm2$aic,glm3$aic,glm4$aic))      
 colnames(tabla.coeficientes) <- c("Modelo", "AIC")
 tabla.coeficientes
 ```
 
-El índice AIC (Akaike Information Criterion) relaciona la bondad junto con la complejidad del modelo y será de utilidad de cara a comparar con otros modelos (cuanto menor sea el índice, mejor se comportará el modelo). Tal y como se puede observar, a mayor número de variables mejor comportamiento del modelo. Por tanto, se parte del último modelo (glm3) para continuar con el análisis:
+El índice AIC (Akaike Information Criterion) relaciona la bondad junto con la complejidad del modelo y será de utilidad de cara a comparar con otros modelos (cuanto menor sea el índice, mejor se comportará el modelo). Tal y como se puede observar, la mejora cuando se incorpora la variable *embarked* es prácticamente inexistente, por lo que se optará por un modelo *glm3*:
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 summary(glm3)
@@ -429,7 +446,7 @@ Según los resultados, se observa que todas las variables son altamente signific
 
 De esta forma, se observa que la variable que más impacto genera en este modelo sobre la variable dependiente *Survived* es la variable *Sex* (un indicativo adicional de que era uno de los principales criterios para abordar el salvamento y que, por tanto, tuvo que ver en el tipo de personas que lograron salvarse).
 
-Si interpretamos los coeficientes parciales de la variable *Sex* (-2.611494) se observa que es negativo. Esto quiere decir que la probabilidad de que una persona sea sexo masculino influye indirectamente en que esta misma persona sea salvada; o lo que es lo mismo, reduce la probabilidad de ser salvada. Lo mismo sucede con ser pasajeros de 2º y 3º clase. Esto verifica en parte las suposiciones de que se priorizaba los miembros de 1º clase, así como las mujeres y los niños.
+Si interpretamos los coeficientes parciales de la variable *Sex* (-2.5366) se observa que es negativo. Esto quiere decir que la probabilidad de que una persona sea sexo masculino influye indirectamente en que esta misma persona sea salvada; o lo que es lo mismo, reduce la probabilidad de ser salvada. Lo mismo sucede con ser pasajeros de 2º y 3º clase. Esto verifica en parte las suposiciones de que se priorizaba los miembros de 1º clase, así como las mujeres y los niños.
 
 Sin embargo, según este modelo, se observa que la variable *Age* posee un OR próximo a 1; esto es un indicativo que prácticamente no existe asociación entre la variable respuesta y la covariable en dicho modelo. Esto puede verse en la siguiente visualización:
 
@@ -440,18 +457,28 @@ ggplot(data = df_train, mapping=aes(x = Age, y = Survived, color=Survived)) +
    theme_bw() + theme(legend.position = "none")
 ```
 
-No obstante, si se realiza un análisis comparativo de las variables en términos absolutos y de frencuencia, se observa que la proporción de niños salvados es más elevada que en el resto de edades:
+No obstante, si se realiza un análisis comparativo de las variables en términos absolutos y de frecuencia, se observa que la proporción de niños salvados es más elevada que en el resto de edades:
 
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
-
-g1 <- ggplot(data = df_original[!(is.na(df_original$Age)),],aes(x=Age,fill=Survived))+geom_histogram(binwidth =3)
-g2 <- ggplot(data = df_original[!(is.na(df_original$Age)),],aes(x=Age,fill=Survived))+geom_histogram(binwidth = 3,position="fill")+ylab("Frecuencia")
+g1 <- ggplot(data = df_train, aes(x=Age, fill=Survived))+geom_histogram(binwidth =3)
+g2 <- ggplot(data = df_train, aes(x=Age, fill=Survived))+geom_histogram(binwidth = 3,position="fill")+ylab("Frecuencia")
 
 grid.arrange(g1, g2,  nrow = 1)
 ```
 
-***Nota***: Este es otro de los puntos donde se hace retrospectiva, ver cómo afecta al modelo y su calidad la inferencia de los valores nulos y el tratamiento de outliers.
+En este punto, se puede decir que se priorizó el salvamento de niños frente a adultos. Además, también se ha visto la relación inversa entre el hecho de ser hombre y ser salvado, al igual que ocurría con la clase del billete, especialmente si se trataba de tercera clase.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+g1 <- ggplot(data = df_train, aes(x=Embarked, fill=Survived))+geom_bar()+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+g2 <- ggplot(data = df_train, aes(x=Embarked, fill=Survived))+geom_bar(binwidth = 3,position="fill")+ylab("Frecuencia")+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+grid.arrange(g1, g2,  nrow = 1)
+```
+
+Vemos que el porcentaje fue un poco mayor en el caso de Cherbourg con respecto a Queenstown y a Southampton, pero como ya se ha visto este hecho no es relevante.
+
+***Nota***: Este sería otro de los puntos donde se hace retrospectiva, para ver cómo afecta al modelo y su calidad la inferencia de los valores nulos y el tratamiento de outliers.
 
 ### Árbol de decisión
 
@@ -467,7 +494,7 @@ model_C50t <- C5.0(Survived~Age+Pclass+Sex , df_train)
 # Detalle del modelo
 summary(model_C50t)
 ```
-Tal y como se puede observar este modelo consigue una tasa de error de 19%%. La variable de más peso en este tipo modelo es *Sex*, al igual que sucedía en el caso anterior.
+Tal y como se puede observar este modelo consigue una tasa de error de 19%. La variable de más peso en este tipo modelo es *Sex*, al igual que sucedía en el caso anterior.
 
 A continuación, generamos el conjunto de reglas y se visualiza el árbol generado para su posterior análisis:
 
@@ -485,12 +512,64 @@ summary(model_C50r)
 plot(model_C50t)
 ```
 
+Analizando las reglas, se puede hacer las siguientes observaciones:
 
-Analizando las reglas, se puede observar que un pasajero de menos de 9 años, que viajaba en 1ªo 2ª clase, de sexo masculino, se salvaba con 92,3% de validez. También resulta interesante ver que una persona con edad superior a 38 años y que viajase en 3ª clase no sobreviviría con un 90,6% de validez.
+* Una persona con edad superior a 38 años y que viajase en 3ª clase no sobreviviría con un 90,6% de validez.
 
-Si se observa el gráfico del árbol, se pude observar que un pasajero de sexo femenino que viajaba en 1ª o 2ª clase tenía una alta probabilidad de sobrevivir.
+* Un varón no sobreviviría con un 81,0% de validez.
 
+* Un pasajero de menos de 9 años, que viajaba en 1ª o 2ª clase, de sexo masculino, se salvaba con 92,3% de validez.
 
-******
-# Conclusiones
-******
+* Una Mujer se salvaría con un 74,1% de validez.
+
+Si se observa el gráfico del árbol, se pude observar que un pasajero de sexo femenino que viajaba en 1ª o 2ª clase tenía una alta probabilidad de sobrevivir. Lo mismo ocurre con un pasajero masculino menor de 9 años que se encuentre en 1º o 2º clase.
+
+## Representación de los resultados
+
+Los resultados se han ido mostrando en las diferentes gráficas y datos numéricos calculados conforme se han ido realizando los diferentes análisis de datos. No obstante, se van a resumir a continuación con tablas y gráficas a modo resumen.
+
+Comenzamos viendo el porcentaje de pasajeros que sobrevivieron (o no) en función de las variables *Age*, *Pclass* y *Age*.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Porcentaje de supervivencia por sexo
+prop.table(table(df_train$Sex, df_train$Survived), margin=1)
+
+# Porcentaje de supervivencia por la clase en la que se viajaba
+prop.table(table(df_train$Pclass, df_train$Survived), margin=1)
+
+# Porcentaje de supervivencia por la edad
+prop.table(table(cut(df_train$Age, breaks = c(-1,9,Inf), labels = c("< 9",">= 9")), df_train$Survived), margin=1)
+```
+
+A continuación se muestran algunas gráficas donde se representa de forma visual lo visto en datos numéricos.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+g1 <- ggplot(data = df_train, aes(x=Sex, fill=Survived))+geom_bar()+xlab("Sex")
+g2 <- ggplot(data = df_train, aes(x=Sex, fill=Survived))+geom_bar(position="fill")+ylab("Frecuencia")+xlab("Sex")
+
+g3 <- ggplot(data = df_train, aes(x=Pclass, fill=Survived))+geom_bar()+xlab("Pclass")
+g4 <- ggplot(data = df_train, aes(x=Pclass, fill=Survived))+geom_bar(position="fill")+ylab("Frecuencia")+xlab("Pclass")
+
+g5 <- ggplot(data = df_train, aes(x=cut(df_train$Age, breaks = c(-1,9,Inf), labels = c("< 9",">= 9")), fill=Survived))+geom_bar()+xlab("Age")
+g6 <- ggplot(data = df_train, aes(x=cut(df_train$Age, breaks = c(-1,9,Inf), labels = c("< 9",">= 9")), fill=Survived))+geom_bar(position="fill")+ylab("Frecuencia")+xlab("Age")
+
+grid.arrange(g1, g2, g3, g4, g5, g6, nrow = 3)
+```
+
+## Conclusiones
+
+A la vista de los resultados, se puede concluir lo siguiente:
+
+* Las mujeres tenían una mayor probabilidad de sobrevivir que los hombres, por lo que se priorizó su evacuación en el momento del hundimiento.
+
+* Los menores de 9 años tienen una probabilidad superior de salir con vida del naufragio que el resto de pasajeros.
+
+* Los pasajeros con billete de 3º clase tuvieron una probabilidad de supervivencia mucho menor que los pasajeros de 1ª y 2ª clase, en especial si se tenía un billete de 1ª clase.
+
+Con este estudio se da respuesta a las preguntas que se hacían al comienzo de este estudio, y se confirman las premisas que se podían ir intuyendo conforme se avanza en el análisis de los datos. En concreto, para validar estas conclusiones se han realizado contrastes de hipótesis, estudio de regresión logarítmica y un modelo supervisado basado en un árbol de decisión.
+
+| **Contribuciones**      | **Firma**                                         |
+| ------------------------|---------------------------------------------------|
+| Investigación previa    | Juan Rodríguez Vega, Alejandro Gallardo Alberola  |
+| Redacción de respuestas | Juan Rodríguez Vega, Alejandro Gallardo Alberola  |
+| Desarrollo de código    | Juan Rodríguez Vega, Alejandro Gallardo Alberola  |
